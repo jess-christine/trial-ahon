@@ -46,4 +46,8 @@ SELECT
     _ingested_at,
     _batch_id,
     _row_hash
-FROM ahon.bronze.psgc;
+FROM ahon.bronze.psgc
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY trim(psgc_code), trim(version)
+    ORDER BY CASE WHEN trim(geographic_level) = 'Dist' THEN 1 ELSE 0 END
+) = 1;

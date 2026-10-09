@@ -41,6 +41,7 @@ CATALOG = os.environ.get("AHON_CATALOG", "ahon")
 CMCI_MAP_TABLE = f"{CATALOG}.reference.cmci_lgu_map"
 
 TARGET_TABLE = f"{CATALOG}.bronze.cmci_raw_indicator_batch_html"
+INDICATOR_TABLE = f"{CATALOG}.bronze.cmci_raw_indicator"
 
 REQUEST_DELAY_SECONDS = 1.0
 
@@ -222,6 +223,155 @@ BRONZE_SCHEMA = StructType(
         ),
     ]
 )
+
+INDICATOR_SCHEMA = StructType(
+    [
+        StructField(
+            "batch_id",
+            StringType(),
+            nullable=False,
+        ),
+        StructField(
+            "psgc_code",
+            StringType(),
+            nullable=False,
+        ),
+        StructField(
+            "psgc_name",
+            StringType(),
+            nullable=True,
+        ),
+        StructField(
+            "cmci_name",
+            StringType(),
+            nullable=False,
+        ),
+        StructField(
+            "indicator_label",
+            StringType(),
+            nullable=False,
+        ),
+        StructField(
+            "year",
+            StringType(),
+            nullable=False,
+        ),
+        StructField(
+            "raw_value",
+            StringType(),
+            nullable=True,
+        ),
+        StructField(
+            "response_hash",
+            StringType(),
+            nullable=False,
+        ),
+        StructField(
+            "ingestion_timestamp",
+            TimestampType(),
+            nullable=False,
+        ),
+        StructField(
+            "_source_name",
+            StringType(),
+            nullable=False,
+        ),
+        StructField(
+            "_source_ref",
+            StringType(),
+            nullable=False,
+        ),
+        StructField(
+            "_ingested_at",
+            TimestampType(),
+            nullable=False,
+        ),
+        StructField(
+            "_batch_id",
+            StringType(),
+            nullable=False,
+        ),
+        StructField(
+            "_row_hash",
+            StringType(),
+            nullable=False,
+        ),
+    ]
+)
+
+
+def write_indicator_rows(
+    parsed_values,
+    batch_mappings,
+    batch_id,
+    response_hash,
+    ingested_at,
+    ingestion_run_id,
+    source_name,
+    source_ref,
+):
+    """Write individual CMCI indicator rows parsed from a batch response."""
+    indicator_rows = []
+    for mapping in batch_mappings:
+        for indicator_label in sorted(
+            EXPECTED_INDICATOR_LABELS
+        ):
+            for year in YEARS:
+                raw_value = parsed_values.get(
+                    (
+                        indicator_label,
+                        mapping["cmci_name"],
+                        year,
+                    ),
+                    "",
+                )
+                indicator_row_hash = hashlib.sha256(
+                    json.dumps(
+                        {
+                            "batch_id": batch_id,
+                            "psgc_code": mapping["psgc_code"],
+                            "indicator_label": indicator_label,
+                            "year": year,
+                            "raw_value": raw_value,
+                            "response_hash": response_hash,
+                        },
+                        sort_keys=True,
+                        ensure_ascii=False,
+                        separators=(
+                            ",",
+                            ":",
+                        ),
+                    ).encode(
+                        "utf-8"
+                    )
+                ).hexdigest()
+                indicator_rows.append(
+                    {
+                        "batch_id": batch_id,
+                        "psgc_code": mapping["psgc_code"],
+                        "psgc_name": mapping["psgc_name"],
+                        "cmci_name": mapping["cmci_name"],
+                        "indicator_label": indicator_label,
+                        "year": year,
+                        "raw_value": raw_value,
+                        "response_hash": response_hash,
+                        "ingestion_timestamp": ingested_at,
+                        "_source_name": source_name,
+                        "_source_ref": source_ref,
+                        "_ingested_at": ingested_at,
+                        "_batch_id": ingestion_run_id,
+                        "_row_hash": indicator_row_hash,
+                    }
+                )
+    (
+        spark.createDataFrame(
+            indicator_rows,
+            schema=INDICATOR_SCHEMA,
+        )
+        .write.format("delta")
+        .mode("append")
+        .saveAsTable(INDICATOR_TABLE)
+    )
 
 # ------------------------------------------------------------------
 # SPARK CONFIG
@@ -492,8 +642,9 @@ LGU_MAPPINGS = [
 ]
 
 if not LGU_MAPPINGS:
-    raise RuntimeError(
-        "No approved LGU mappings were selected"
+    print(
+        "No approved LGU mappings were selected. "
+        + "Skipping batch ingestion."
     )
 
 # ------------------------------------------------------------------
@@ -1122,6 +1273,17 @@ try:
                 .saveAsTable(TARGET_TABLE)
             )
 
+            write_indicator_rows(
+                parsed_values=parsed_values,
+                batch_mappings=batch_mappings,
+                batch_id=batch_id,
+                response_hash=response_hash,
+                ingested_at=ingested_at,
+                ingestion_run_id=INGESTION_RUN_ID,
+                source_name=SOURCE_NAME,
+                source_ref=SOURCE_REF,
+            )
+
             existing_batch_hashes[
                 batch_id
             ] = response_hash
@@ -1171,6 +1333,77 @@ try:
 
 finally:
     session.close()
+
+# ------------------------------------------------------------------
+# BACKFILL INDICATOR ROWS FOR EXISTING BATCH HTML
+# ------------------------------------------------------------------
+
+existing_indicator_batch_ids = set(
+    row["batch_id"]
+    for row in spark.table(INDICATOR_TABLE)
+    .select("batch_id")
+    .distinct()
+    .collect()
+)
+
+backfill_batch_rows = (
+    spark.table(TARGET_TABLE)
+    .where(
+        ~F.col("batch_id").isin(
+            list(existing_indicator_batch_ids)
+        )
+    )
+    .collect()
+)
+
+if backfill_batch_rows:
+    psgc_name_lookup = {
+        row["psgc_code"]: row["psgc_name"]
+        for row in approved_mapping_df.select(
+            "psgc_code",
+            "psgc_name",
+        ).collect()
+    }
+
+    print(
+        "Backfilling "
+        + str(len(backfill_batch_rows))
+        + " batch HTML rows to "
+        + INDICATOR_TABLE
+    )
+
+    for batch_row in backfill_batch_rows:
+        backfill_mappings = [
+            {
+                "psgc_code": psgc,
+                "psgc_name": psgc_name_lookup.get(
+                    psgc
+                ),
+                "cmci_name": cmci,
+            }
+            for psgc, cmci in zip(
+                batch_row["requested_psgc_codes"],
+                batch_row["requested_cmci_names"],
+            )
+        ]
+
+        parsed_values_backfill = parse_batch_response(
+            response_html=batch_row["response_html"],
+            batch_mappings=backfill_mappings,
+        )
+
+        write_indicator_rows(
+            parsed_values=parsed_values_backfill,
+            batch_mappings=backfill_mappings,
+            batch_id=batch_row["batch_id"],
+            response_hash=batch_row["response_hash"],
+            ingested_at=batch_row["ingestion_timestamp"],
+            ingestion_run_id=batch_row["_batch_id"],
+            source_name=batch_row["_source_name"],
+            source_ref=batch_row["_source_ref"],
+        )
+
+    print("Backfill complete")
 
 # ------------------------------------------------------------------
 # VALIDATE BATCH COUNTS

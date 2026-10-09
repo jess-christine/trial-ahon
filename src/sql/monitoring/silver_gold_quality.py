@@ -495,7 +495,15 @@ def main() -> None:
             & F.col("Longitude").between(-180, 180)
             & (F.col("Depth") >= 0)
             & (F.col("Magnitude") >= 0)
-        ).count()
+        ).select(
+            F.xxhash64(
+                parsed_time,
+                F.col("Latitude"),
+                F.col("Longitude"),
+                F.col("Depth"),
+                F.col("Magnitude"),
+            ).alias("id")
+        ).distinct().count()
         record_reconciliation(
             "silver",
             "philvolcs_earthquake",

@@ -104,8 +104,8 @@ def main() -> None:
         .withColumn(
             "_distance_m",
             F.expr(
-                "st_distance(try_to_geography(_centroid_geojson), "
-                "try_to_geography(_event_geojson))"
+                "st_distancespheroid(try_to_geometry(_centroid_geojson), "
+                "try_to_geometry(_event_geojson))"
             ),
         )
         .select("earthquake_fact_key", "psgc_code", "magnitude", "_distance_m")
