@@ -59,7 +59,7 @@ parser.add_argument(
         "test",
         "full",
     ],
-    default="full",
+    default=os.environ.get("AHON_CMCI_RUN_MODE", "test"),
 )
 
 parser.add_argument(
@@ -330,6 +330,12 @@ def write_indicator_rows(
                         {
                             "batch_id": batch_id,
                             "psgc_code": mapping["psgc_code"],
+<<<<<<< Updated upstream
+=======
+                            "psgc_name": mapping["psgc_name"],
+                            "cmci_name": mapping["cmci_name"],
+                            "ingestion_timestamp": ingested_at.isoformat(),
+>>>>>>> Stashed changes
                             "indicator_label": indicator_label,
                             "year": year,
                             "raw_value": raw_value,
@@ -368,6 +374,14 @@ def write_indicator_rows(
             indicator_rows,
             schema=INDICATOR_SCHEMA,
         )
+<<<<<<< Updated upstream
+=======
+        .join(
+            spark.table(INDICATOR_TABLE).select("batch_id", "psgc_code", "indicator_label", "year", "response_hash"),
+            ["batch_id", "psgc_code", "indicator_label", "year", "response_hash"],
+            "left_anti",
+        )
+>>>>>>> Stashed changes
         .write.format("delta")
         .mode("append")
         .saveAsTable(INDICATOR_TABLE)
@@ -389,6 +403,7 @@ spark.conf.set(
 required_tables = [
     CMCI_MAP_TABLE,
     TARGET_TABLE,
+    INDICATOR_TABLE,
 ]
 
 for table_name in required_tables:
@@ -481,11 +496,6 @@ approved_mapping_df = (
     .where(
         F.col("cmci_name") != ""
     )
-    .dropDuplicates(
-        [
-            "psgc_code",
-        ]
-    )
     .orderBy(
         "psgc_code"
     )
@@ -513,6 +523,7 @@ approved_mapping_count = (
     approved_mapping_df.count()
 )
 
+<<<<<<< Updated upstream
 EXPECTED_APPROVED_MAPPING_COUNT = 1626
 
 if (
@@ -525,6 +536,13 @@ if (
         + " approved active CMCI mappings, found "
         + str(approved_mapping_count)
     )
+=======
+if approved_mapping_count == 0:
+    raise RuntimeError("No reviewed active CMCI mappings are available")
+if approved_mapping_df.groupBy("psgc_code").count().filter("count > 1").limit(1).count():
+    raise RuntimeError("Duplicate PSGC keys in reviewed active CMCI mapping")
+print("Reviewed active CMCI mapping coverage: " + str(approved_mapping_count))
+>>>>>>> Stashed changes
 
 existing_bronze_psgc_df = (
     spark.table(
@@ -1338,6 +1356,7 @@ finally:
 # BACKFILL INDICATOR ROWS FOR EXISTING BATCH HTML
 # ------------------------------------------------------------------
 
+<<<<<<< Updated upstream
 existing_indicator_batch_ids = set(
     row["batch_id"]
     for row in spark.table(INDICATOR_TABLE)
@@ -1353,6 +1372,13 @@ backfill_batch_rows = (
             list(existing_indicator_batch_ids)
         )
     )
+=======
+indicator_counts = spark.table(INDICATOR_TABLE).groupBy("batch_id").count()
+backfill_batch_rows = (
+    spark.table(TARGET_TABLE).join(indicator_counts, "batch_id", "left")
+    .where(F.coalesce(F.col("count"), F.lit(0)) < F.col("returned_value_count"))
+    .drop("count")
+>>>>>>> Stashed changes
     .collect()
 )
 

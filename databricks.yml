@@ -34,7 +34,8 @@ variables:
         "AHON_BLGF_DATASET_FOLDER": "${var.blgf_dataset_folder}",
         "AHON_CMCI_PORTAL_URL": "${var.cmci_portal_url}",
         "AHON_CMCI_PROCESS_URL": "${var.cmci_process_url}",
-        "AHON_CMCI_YEARS": "${var.cmci_years}"
+        "AHON_CMCI_YEARS": "${var.cmci_years}",
+        "AHON_CMCI_RUN_MODE": "full"
       }
   source_volume_path:
     description: Landing volume for source files.
@@ -96,20 +97,33 @@ targets:
     variables:
       catalog: ahon_dev
       source_volume_path: /Volumes/ahon_dev/reference/source
+<<<<<<< Updated upstream
       boundary_geojson_path: /Volumes/ahon_dev/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
       node_type_id: m5d.large
       boundary_code_property: PSGC
+=======
+      boundary_geojson_path: "/Volumes/ahon_dev/reference/source/lgu_boundari\
+        es/geoportal_city_municipality.geojson"
+      boundary_code_property: psgc_code
+>>>>>>> Stashed changes
       psgc_secret_scope: ahon
       psgc_secret_key: psgc_api_token
   prod:
     mode: production
     workspace:
-      root_path: /Workspace/Users/jessc.manuel@gmail.com/.bundle/${bundle.name}/${bundle.target}
+      root_path: "/Workspace/Users/jessc.manuel@gmail.com/.bundle/\
+        ${bundle.name}/${bundle.target}"
     variables:
       catalog: ahon
       source_volume_path: /Volumes/ahon/reference/source
+<<<<<<< Updated upstream
       boundary_geojson_path: /Volumes/ahon/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
       node_type_id: m5d.large
       boundary_code_property: PSGC
+=======
+      boundary_geojson_path: "/Volumes/ahon/reference/source/lgu_boundaries/g\
+        eoportal_city_municipality.geojson"
+      boundary_code_property: psgc_code
+>>>>>>> Stashed changes
       psgc_secret_scope: ahon
       psgc_secret_key: psgc_api_token

@@ -1,0 +1,3294 @@
+{
+  "datasets": [
+    {
+      "name": "earthquake_events",
+      "displayName": "Earthquake Events",
+      "config": {
+        "version": "1.1",
+        "source": "gold.fact_earthquake_event",
+        "dimensions": [
+          {
+            "name": "psgc_code",
+            "expr": "psgc_code"
+          },
+          {
+            "name": "location",
+            "expr": "location",
+            "displayName": "Location"
+          },
+          {
+            "name": "event_timestamp",
+            "expr": "timestamp",
+            "displayName": "Event Timestamp"
+          },
+          {
+            "name": "magnitude",
+            "expr": "magnitude",
+            "displayName": "Magnitude"
+          },
+          {
+            "name": "depth",
+            "expr": "depth",
+            "displayName": "Depth"
+          },
+          {
+            "name": "latitude",
+            "expr": "latitude"
+          },
+          {
+            "name": "longitude",
+            "expr": "longitude"
+          },
+          {
+            "name": "earthquake_fact_key",
+            "expr": "earthquake_fact_key"
+          }
+        ],
+        "measures": [
+          {
+            "name": "event_count",
+            "expr": "COUNT(earthquake_fact_key)",
+            "displayName": "Event Count"
+          },
+          {
+            "name": "avg_magnitude",
+            "expr": "AVG(magnitude)",
+            "displayName": "Average Magnitude",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "max_magnitude",
+            "expr": "MAX(magnitude)",
+            "displayName": "Maximum Magnitude",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_depth",
+            "expr": "AVG(depth)",
+            "displayName": "Average Depth",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "cmci_indicators",
+      "displayName": "CMCI Indicators",
+      "config": {
+        "version": "1.1",
+        "source": "SELECT\n  f.psgc_code,\n  f.year,\n  f.indicator_code,\n  f.cmci_name,\n  f.geographic_level,\n  f.raw_score,\n  d.pillar_name,\n  d.indicator_name\nFROM gold.fact_cmci_indicator f\nLEFT JOIN gold.dim_cmci_indicator d ON f.indicator_code = d.indicator_code\n",
+        "dimensions": [
+          {
+            "name": "psgc_code",
+            "expr": "psgc_code"
+          },
+          {
+            "name": "year",
+            "expr": "year",
+            "displayName": "Year"
+          },
+          {
+            "name": "indicator_code",
+            "expr": "indicator_code"
+          },
+          {
+            "name": "pillar_name",
+            "expr": "pillar_name",
+            "displayName": "Pillar"
+          },
+          {
+            "name": "indicator_name",
+            "expr": "indicator_name",
+            "displayName": "Indicator"
+          },
+          {
+            "name": "cmci_name",
+            "expr": "cmci_name",
+            "displayName": "LGU Name"
+          },
+          {
+            "name": "geographic_level",
+            "expr": "geographic_level"
+          }
+        ],
+        "measures": [
+          {
+            "name": "avg_raw_score",
+            "expr": "AVG(raw_score)",
+            "displayName": "Average Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ldrrmf_budget",
+      "displayName": "LDRRMF Budget",
+      "config": {
+        "version": "1.1",
+        "source": "gold.fact_ldrrmf",
+        "dimensions": [
+          {
+            "name": "psgc_code",
+            "expr": "psgc_code"
+          },
+          {
+            "name": "fiscal_year",
+            "expr": "fiscal_year",
+            "displayName": "Fiscal Year"
+          },
+          {
+            "name": "lgu_name",
+            "expr": "lgu_name",
+            "displayName": "LGU Name"
+          },
+          {
+            "name": "region",
+            "expr": "region",
+            "displayName": "Region"
+          },
+          {
+            "name": "province",
+            "expr": "province",
+            "displayName": "Province"
+          },
+          {
+            "name": "lgu_type",
+            "expr": "lgu_type",
+            "displayName": "LGU Type"
+          }
+        ],
+        "measures": [
+          {
+            "name": "total_appropriation",
+            "expr": "SUM(total_appropriation)",
+            "displayName": "Total Appropriation",
+            "format": {
+              "type": "currency",
+              "currencyCode": "PHP",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "total_expenditure",
+            "expr": "SUM(total_expenditure)",
+            "displayName": "Total Expenditure",
+            "format": {
+              "type": "currency",
+              "currencyCode": "PHP",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "appropriation_70_pct",
+            "expr": "SUM(appropriation_70_pct)",
+            "displayName": "70% Appropriation (DRRM)",
+            "format": {
+              "type": "currency",
+              "currencyCode": "PHP",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "expenditure_70_pct",
+            "expr": "SUM(expenditure_70_pct)",
+            "displayName": "70% Expenditure (DRRM)",
+            "format": {
+              "type": "currency",
+              "currencyCode": "PHP",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "appropriation_30_pct",
+            "expr": "SUM(appropriation_30_pct)",
+            "displayName": "30% Appropriation (QRF)",
+            "format": {
+              "type": "currency",
+              "currencyCode": "PHP",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "expenditure_30_pct",
+            "expr": "SUM(expenditure_30_pct)",
+            "displayName": "30% Expenditure (QRF)",
+            "format": {
+              "type": "currency",
+              "currencyCode": "PHP",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_utilization_rate",
+            "expr": "AVG(utilization_rate)",
+            "displayName": "Average Utilization Rate",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "lgu_risk_prep",
+      "displayName": "LGU Risk & Preparedness",
+      "config": {
+        "version": "1.1",
+        "source": "WITH latest_region AS (\n SELECT psgc_code, region FROM gold.fact_ldrrmf\n WHERE psgc_code IS NOT NULL AND region IS NOT NULL\n QUALIFY ROW_NUMBER() OVER (PARTITION BY psgc_code ORDER BY fiscal_year DESC, ldrrmf_fact_key DESC) = 1\n), population AS (\n SELECT psgc_code, year, total_population FROM gold.fact_population\n WHERE year = (SELECT MAX(year) FROM gold.fact_population) AND psgc_code IS NOT NULL\n)\nSELECT lm.psgc_code, lm.lgu_name, COALESCE(lm.province_name, 'No province assignment') AS province_name,\n COALESCE(lr.region, 'Region unavailable') AS region, lm.income_classification, lm.geographic_level,\n pop.total_population, r.population_exposure_score, r.earthquake_activity_score, r.risk_score,\n r.risk_tertile, COALESCE(r.risk_level, 'Not scored') AS risk_level,\n p.cmci_capacity_score, p.ldrrmf_utilization_score, p.preparedness_score, p.preparedness_gap,\n p.preparedness_tertile, p.preparedness_gap_rank, p.cmci_year, p.fiscal_year,\n COALESCE(v.priority_category, 'Not classified') AS priority_category,\n COALESCE(r.population_year, pop.year) AS population_year, r.risk_window_start, r.risk_window_end, r.calculated_at,\n r.run_id,\n CASE WHEN r.psgc_code IS NULL THEN 'LGU absent from Platinum'\n      WHEN r.population_exposure_score IS NULL THEN 'Population unavailable'\n      WHEN r.earthquake_activity_score IS NULL THEN 'Earthquake components unavailable'\n      ELSE 'Scored' END AS risk_status,\n CASE WHEN p.psgc_code IS NULL THEN 'Snapshot unavailable or inconsistent'\n      WHEN p.cmci_capacity_score IS NULL AND p.ldrrmf_utilization_score IS NULL THEN 'CMCI and LDRRMF unavailable'\n      WHEN p.cmci_capacity_score IS NULL THEN 'CMCI incomplete or unavailable'\n      WHEN p.ldrrmf_utilization_score IS NULL THEN 'LDRRMF unavailable or zero denominator'\n      ELSE 'Scored' END AS preparedness_status\nFROM reference.lgu_master lm\nLEFT JOIN latest_region lr ON lm.psgc_code = lr.psgc_code\nLEFT JOIN population pop ON lm.psgc_code = pop.psgc_code\nLEFT JOIN platinum.risk_level_by_lgu r ON lm.psgc_code = r.psgc_code\nLEFT JOIN platinum.preparedness_gap_by_lgu p ON lm.psgc_code = p.psgc_code AND r.run_id = p.run_id\nLEFT JOIN platinum.vulnerability_priority_by_lgu v ON lm.psgc_code = v.psgc_code AND r.run_id = v.run_id\nWHERE lm.is_active = true AND lm.geographic_level IN ('City', 'Mun', 'Municipality', 'City/Municipality')",
+        "dimensions": [
+          {
+            "name": "psgc_code",
+            "expr": "psgc_code"
+          },
+          {
+            "name": "lgu_name",
+            "expr": "lgu_name",
+            "displayName": "LGU Name"
+          },
+          {
+            "name": "province_name",
+            "expr": "province_name",
+            "displayName": "Province"
+          },
+          {
+            "name": "region",
+            "expr": "region",
+            "displayName": "Region"
+          },
+          {
+            "name": "income_classification",
+            "expr": "income_classification",
+            "displayName": "Income Classification"
+          },
+          {
+            "name": "geographic_level",
+            "expr": "geographic_level"
+          },
+          {
+            "name": "risk_level",
+            "expr": "risk_level",
+            "displayName": "Risk Level"
+          },
+          {
+            "name": "risk_tertile",
+            "expr": "risk_tertile"
+          },
+          {
+            "name": "priority_category",
+            "expr": "priority_category",
+            "displayName": "Priority Category"
+          },
+          {
+            "name": "preparedness_tertile",
+            "expr": "preparedness_tertile"
+          },
+          {
+            "name": "preparedness_gap_rank",
+            "expr": "preparedness_gap_rank"
+          },
+          {
+            "name": "cmci_year",
+            "expr": "cmci_year"
+          },
+          {
+            "name": "fiscal_year",
+            "expr": "fiscal_year"
+          },
+          {
+            "name": "population_year",
+            "expr": "population_year",
+            "displayName": "Population Year"
+          },
+          {
+            "name": "risk_window_start",
+            "expr": "risk_window_start",
+            "displayName": "Risk Window Start"
+          },
+          {
+            "name": "risk_window_end",
+            "expr": "risk_window_end",
+            "displayName": "Risk Window End"
+          },
+          {
+            "name": "calculated_at",
+            "expr": "calculated_at",
+            "displayName": "Calculated At"
+          },
+          {
+            "name": "run_id",
+            "expr": "run_id",
+            "displayName": "Run Id"
+          },
+          {
+            "name": "risk_status",
+            "expr": "risk_status",
+            "displayName": "Risk Status"
+          },
+          {
+            "name": "preparedness_status",
+            "expr": "preparedness_status",
+            "displayName": "Preparedness Status"
+          }
+        ],
+        "measures": [
+          {
+            "name": "lgu_count",
+            "expr": "COUNT(DISTINCT psgc_code)",
+            "displayName": "LGU Count"
+          },
+          {
+            "name": "avg_risk_score",
+            "expr": "AVG(risk_score)",
+            "displayName": "Average Risk Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_preparedness_score",
+            "expr": "AVG(preparedness_score)",
+            "displayName": "Average Preparedness Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_preparedness_gap",
+            "expr": "AVG(preparedness_gap)",
+            "displayName": "Average Preparedness Gap",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_cmci_capacity_score",
+            "expr": "AVG(cmci_capacity_score)",
+            "displayName": "Average CMCI Capacity Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_ldrrmf_utilization_score",
+            "expr": "AVG(ldrrmf_utilization_score)",
+            "displayName": "Average LDRRMF Utilization Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "total_population",
+            "expr": "SUM(total_population)",
+            "displayName": "Total Population"
+          },
+          {
+            "name": "avg_population_exposure_score",
+            "expr": "AVG(population_exposure_score)",
+            "displayName": "Average Population Exposure Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_earthquake_activity_score",
+            "expr": "AVG(earthquake_activity_score)",
+            "displayName": "Average Earthquake Activity Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "risk_scored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN risk_score IS NOT NULL THEN psgc_code END)",
+            "displayName": "LGUs with risk score"
+          },
+          {
+            "name": "preparedness_scored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN preparedness_score IS NOT NULL THEN psgc_code END)",
+            "displayName": "LGUs with preparedness score"
+          },
+          {
+            "name": "unscored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN risk_score IS NULL OR preparedness_score IS NULL THEN psgc_code END)",
+            "displayName": "LGUs with incomplete scores"
+          },
+          {
+            "name": "highest_priority_count",
+            "expr": "COUNT(DISTINCT CASE WHEN priority_category = 'Highest priority' THEN psgc_code END)",
+            "displayName": "Highest priority LGUs"
+          }
+        ]
+      }
+    },
+    {
+      "name": "top_risk",
+      "displayName": "Top 20 scored LGUs by risk",
+      "config": {
+        "version": "1.1",
+        "source": "SELECT * FROM (\nWITH latest_region AS (\n SELECT psgc_code, region FROM gold.fact_ldrrmf\n WHERE psgc_code IS NOT NULL AND region IS NOT NULL\n QUALIFY ROW_NUMBER() OVER (PARTITION BY psgc_code ORDER BY fiscal_year DESC, ldrrmf_fact_key DESC) = 1\n), population AS (\n SELECT psgc_code, year, total_population FROM gold.fact_population\n WHERE year = (SELECT MAX(year) FROM gold.fact_population) AND psgc_code IS NOT NULL\n)\nSELECT lm.psgc_code, lm.lgu_name, COALESCE(lm.province_name, 'No province assignment') AS province_name,\n COALESCE(lr.region, 'Region unavailable') AS region, lm.income_classification, lm.geographic_level,\n pop.total_population, r.population_exposure_score, r.earthquake_activity_score, r.risk_score,\n r.risk_tertile, COALESCE(r.risk_level, 'Not scored') AS risk_level,\n p.cmci_capacity_score, p.ldrrmf_utilization_score, p.preparedness_score, p.preparedness_gap,\n p.preparedness_tertile, p.preparedness_gap_rank, p.cmci_year, p.fiscal_year,\n COALESCE(v.priority_category, 'Not classified') AS priority_category,\n COALESCE(r.population_year, pop.year) AS population_year, r.risk_window_start, r.risk_window_end, r.calculated_at,\n r.run_id,\n CASE WHEN r.psgc_code IS NULL THEN 'LGU absent from Platinum'\n      WHEN r.population_exposure_score IS NULL THEN 'Population unavailable'\n      WHEN r.earthquake_activity_score IS NULL THEN 'Earthquake components unavailable'\n      ELSE 'Scored' END AS risk_status,\n CASE WHEN p.psgc_code IS NULL THEN 'Snapshot unavailable or inconsistent'\n      WHEN p.cmci_capacity_score IS NULL AND p.ldrrmf_utilization_score IS NULL THEN 'CMCI and LDRRMF unavailable'\n      WHEN p.cmci_capacity_score IS NULL THEN 'CMCI incomplete or unavailable'\n      WHEN p.ldrrmf_utilization_score IS NULL THEN 'LDRRMF unavailable or zero denominator'\n      ELSE 'Scored' END AS preparedness_status\nFROM reference.lgu_master lm\nLEFT JOIN latest_region lr ON lm.psgc_code = lr.psgc_code\nLEFT JOIN population pop ON lm.psgc_code = pop.psgc_code\nLEFT JOIN platinum.risk_level_by_lgu r ON lm.psgc_code = r.psgc_code\nLEFT JOIN platinum.preparedness_gap_by_lgu p ON lm.psgc_code = p.psgc_code AND r.run_id = p.run_id\nLEFT JOIN platinum.vulnerability_priority_by_lgu v ON lm.psgc_code = v.psgc_code AND r.run_id = v.run_id\nWHERE lm.is_active = true AND lm.geographic_level IN ('City', 'Mun', 'Municipality', 'City/Municipality')\n) scores WHERE risk_score IS NOT NULL\nQUALIFY ROW_NUMBER() OVER (ORDER BY risk_score DESC, psgc_code) <= 20",
+        "dimensions": [
+          {
+            "name": "psgc_code",
+            "expr": "psgc_code"
+          },
+          {
+            "name": "lgu_name",
+            "expr": "lgu_name",
+            "displayName": "LGU Name"
+          },
+          {
+            "name": "province_name",
+            "expr": "province_name",
+            "displayName": "Province"
+          },
+          {
+            "name": "region",
+            "expr": "region",
+            "displayName": "Region"
+          },
+          {
+            "name": "income_classification",
+            "expr": "income_classification",
+            "displayName": "Income Classification"
+          },
+          {
+            "name": "geographic_level",
+            "expr": "geographic_level"
+          },
+          {
+            "name": "risk_level",
+            "expr": "risk_level",
+            "displayName": "Risk Level"
+          },
+          {
+            "name": "risk_tertile",
+            "expr": "risk_tertile"
+          },
+          {
+            "name": "priority_category",
+            "expr": "priority_category",
+            "displayName": "Priority Category"
+          },
+          {
+            "name": "preparedness_tertile",
+            "expr": "preparedness_tertile"
+          },
+          {
+            "name": "preparedness_gap_rank",
+            "expr": "preparedness_gap_rank"
+          },
+          {
+            "name": "cmci_year",
+            "expr": "cmci_year"
+          },
+          {
+            "name": "fiscal_year",
+            "expr": "fiscal_year"
+          },
+          {
+            "name": "population_year",
+            "expr": "population_year",
+            "displayName": "Population Year"
+          },
+          {
+            "name": "risk_window_start",
+            "expr": "risk_window_start",
+            "displayName": "Risk Window Start"
+          },
+          {
+            "name": "risk_window_end",
+            "expr": "risk_window_end",
+            "displayName": "Risk Window End"
+          },
+          {
+            "name": "calculated_at",
+            "expr": "calculated_at",
+            "displayName": "Calculated At"
+          },
+          {
+            "name": "run_id",
+            "expr": "run_id",
+            "displayName": "Run Id"
+          },
+          {
+            "name": "risk_status",
+            "expr": "risk_status",
+            "displayName": "Risk Status"
+          },
+          {
+            "name": "preparedness_status",
+            "expr": "preparedness_status",
+            "displayName": "Preparedness Status"
+          }
+        ],
+        "measures": [
+          {
+            "name": "lgu_count",
+            "expr": "COUNT(DISTINCT psgc_code)",
+            "displayName": "LGU Count"
+          },
+          {
+            "name": "avg_risk_score",
+            "expr": "AVG(risk_score)",
+            "displayName": "Average Risk Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_preparedness_score",
+            "expr": "AVG(preparedness_score)",
+            "displayName": "Average Preparedness Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_preparedness_gap",
+            "expr": "AVG(preparedness_gap)",
+            "displayName": "Average Preparedness Gap",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_cmci_capacity_score",
+            "expr": "AVG(cmci_capacity_score)",
+            "displayName": "Average CMCI Capacity Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_ldrrmf_utilization_score",
+            "expr": "AVG(ldrrmf_utilization_score)",
+            "displayName": "Average LDRRMF Utilization Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "total_population",
+            "expr": "SUM(total_population)",
+            "displayName": "Total Population"
+          },
+          {
+            "name": "avg_population_exposure_score",
+            "expr": "AVG(population_exposure_score)",
+            "displayName": "Average Population Exposure Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_earthquake_activity_score",
+            "expr": "AVG(earthquake_activity_score)",
+            "displayName": "Average Earthquake Activity Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "risk_scored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN risk_score IS NOT NULL THEN psgc_code END)",
+            "displayName": "LGUs with risk score"
+          },
+          {
+            "name": "preparedness_scored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN preparedness_score IS NOT NULL THEN psgc_code END)",
+            "displayName": "LGUs with preparedness score"
+          },
+          {
+            "name": "unscored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN risk_score IS NULL OR preparedness_score IS NULL THEN psgc_code END)",
+            "displayName": "LGUs with incomplete scores"
+          },
+          {
+            "name": "highest_priority_count",
+            "expr": "COUNT(DISTINCT CASE WHEN priority_category = 'Highest priority' THEN psgc_code END)",
+            "displayName": "Highest priority LGUs"
+          }
+        ]
+      }
+    },
+    {
+      "name": "top_gap",
+      "displayName": "Top 20 experimental descending gaps",
+      "config": {
+        "version": "1.1",
+        "source": "SELECT * FROM (\nWITH latest_region AS (\n SELECT psgc_code, region FROM gold.fact_ldrrmf\n WHERE psgc_code IS NOT NULL AND region IS NOT NULL\n QUALIFY ROW_NUMBER() OVER (PARTITION BY psgc_code ORDER BY fiscal_year DESC, ldrrmf_fact_key DESC) = 1\n), population AS (\n SELECT psgc_code, year, total_population FROM gold.fact_population\n WHERE year = (SELECT MAX(year) FROM gold.fact_population) AND psgc_code IS NOT NULL\n)\nSELECT lm.psgc_code, lm.lgu_name, COALESCE(lm.province_name, 'No province assignment') AS province_name,\n COALESCE(lr.region, 'Region unavailable') AS region, lm.income_classification, lm.geographic_level,\n pop.total_population, r.population_exposure_score, r.earthquake_activity_score, r.risk_score,\n r.risk_tertile, COALESCE(r.risk_level, 'Not scored') AS risk_level,\n p.cmci_capacity_score, p.ldrrmf_utilization_score, p.preparedness_score, p.preparedness_gap,\n p.preparedness_tertile, p.preparedness_gap_rank, p.cmci_year, p.fiscal_year,\n COALESCE(v.priority_category, 'Not classified') AS priority_category,\n COALESCE(r.population_year, pop.year) AS population_year, r.risk_window_start, r.risk_window_end, r.calculated_at,\n r.run_id,\n CASE WHEN r.psgc_code IS NULL THEN 'LGU absent from Platinum'\n      WHEN r.population_exposure_score IS NULL THEN 'Population unavailable'\n      WHEN r.earthquake_activity_score IS NULL THEN 'Earthquake components unavailable'\n      ELSE 'Scored' END AS risk_status,\n CASE WHEN p.psgc_code IS NULL THEN 'Snapshot unavailable or inconsistent'\n      WHEN p.cmci_capacity_score IS NULL AND p.ldrrmf_utilization_score IS NULL THEN 'CMCI and LDRRMF unavailable'\n      WHEN p.cmci_capacity_score IS NULL THEN 'CMCI incomplete or unavailable'\n      WHEN p.ldrrmf_utilization_score IS NULL THEN 'LDRRMF unavailable or zero denominator'\n      ELSE 'Scored' END AS preparedness_status\nFROM reference.lgu_master lm\nLEFT JOIN latest_region lr ON lm.psgc_code = lr.psgc_code\nLEFT JOIN population pop ON lm.psgc_code = pop.psgc_code\nLEFT JOIN platinum.risk_level_by_lgu r ON lm.psgc_code = r.psgc_code\nLEFT JOIN platinum.preparedness_gap_by_lgu p ON lm.psgc_code = p.psgc_code AND r.run_id = p.run_id\nLEFT JOIN platinum.vulnerability_priority_by_lgu v ON lm.psgc_code = v.psgc_code AND r.run_id = v.run_id\nWHERE lm.is_active = true AND lm.geographic_level IN ('City', 'Mun', 'Municipality', 'City/Municipality')\n) scores WHERE preparedness_gap IS NOT NULL\nQUALIFY ROW_NUMBER() OVER (ORDER BY preparedness_gap DESC, psgc_code) <= 20",
+        "dimensions": [
+          {
+            "name": "psgc_code",
+            "expr": "psgc_code"
+          },
+          {
+            "name": "lgu_name",
+            "expr": "lgu_name",
+            "displayName": "LGU Name"
+          },
+          {
+            "name": "province_name",
+            "expr": "province_name",
+            "displayName": "Province"
+          },
+          {
+            "name": "region",
+            "expr": "region",
+            "displayName": "Region"
+          },
+          {
+            "name": "income_classification",
+            "expr": "income_classification",
+            "displayName": "Income Classification"
+          },
+          {
+            "name": "geographic_level",
+            "expr": "geographic_level"
+          },
+          {
+            "name": "risk_level",
+            "expr": "risk_level",
+            "displayName": "Risk Level"
+          },
+          {
+            "name": "risk_tertile",
+            "expr": "risk_tertile"
+          },
+          {
+            "name": "priority_category",
+            "expr": "priority_category",
+            "displayName": "Priority Category"
+          },
+          {
+            "name": "preparedness_tertile",
+            "expr": "preparedness_tertile"
+          },
+          {
+            "name": "preparedness_gap_rank",
+            "expr": "preparedness_gap_rank"
+          },
+          {
+            "name": "cmci_year",
+            "expr": "cmci_year"
+          },
+          {
+            "name": "fiscal_year",
+            "expr": "fiscal_year"
+          },
+          {
+            "name": "population_year",
+            "expr": "population_year",
+            "displayName": "Population Year"
+          },
+          {
+            "name": "risk_window_start",
+            "expr": "risk_window_start",
+            "displayName": "Risk Window Start"
+          },
+          {
+            "name": "risk_window_end",
+            "expr": "risk_window_end",
+            "displayName": "Risk Window End"
+          },
+          {
+            "name": "calculated_at",
+            "expr": "calculated_at",
+            "displayName": "Calculated At"
+          },
+          {
+            "name": "run_id",
+            "expr": "run_id",
+            "displayName": "Run Id"
+          },
+          {
+            "name": "risk_status",
+            "expr": "risk_status",
+            "displayName": "Risk Status"
+          },
+          {
+            "name": "preparedness_status",
+            "expr": "preparedness_status",
+            "displayName": "Preparedness Status"
+          }
+        ],
+        "measures": [
+          {
+            "name": "lgu_count",
+            "expr": "COUNT(DISTINCT psgc_code)",
+            "displayName": "LGU Count"
+          },
+          {
+            "name": "avg_risk_score",
+            "expr": "AVG(risk_score)",
+            "displayName": "Average Risk Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_preparedness_score",
+            "expr": "AVG(preparedness_score)",
+            "displayName": "Average Preparedness Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_preparedness_gap",
+            "expr": "AVG(preparedness_gap)",
+            "displayName": "Average Preparedness Gap",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_cmci_capacity_score",
+            "expr": "AVG(cmci_capacity_score)",
+            "displayName": "Average CMCI Capacity Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_ldrrmf_utilization_score",
+            "expr": "AVG(ldrrmf_utilization_score)",
+            "displayName": "Average LDRRMF Utilization Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "total_population",
+            "expr": "SUM(total_population)",
+            "displayName": "Total Population"
+          },
+          {
+            "name": "avg_population_exposure_score",
+            "expr": "AVG(population_exposure_score)",
+            "displayName": "Average Population Exposure Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_earthquake_activity_score",
+            "expr": "AVG(earthquake_activity_score)",
+            "displayName": "Average Earthquake Activity Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "risk_scored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN risk_score IS NOT NULL THEN psgc_code END)",
+            "displayName": "LGUs with risk score"
+          },
+          {
+            "name": "preparedness_scored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN preparedness_score IS NOT NULL THEN psgc_code END)",
+            "displayName": "LGUs with preparedness score"
+          },
+          {
+            "name": "unscored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN risk_score IS NULL OR preparedness_score IS NULL THEN psgc_code END)",
+            "displayName": "LGUs with incomplete scores"
+          },
+          {
+            "name": "highest_priority_count",
+            "expr": "COUNT(DISTINCT CASE WHEN priority_category = 'Highest priority' THEN psgc_code END)",
+            "displayName": "Highest priority LGUs"
+          }
+        ]
+      }
+    },
+    {
+      "name": "highest_priority",
+      "displayName": "Top 20 highest priority LGUs",
+      "config": {
+        "version": "1.1",
+        "source": "SELECT * FROM (\nWITH latest_region AS (\n SELECT psgc_code, region FROM gold.fact_ldrrmf\n WHERE psgc_code IS NOT NULL AND region IS NOT NULL\n QUALIFY ROW_NUMBER() OVER (PARTITION BY psgc_code ORDER BY fiscal_year DESC, ldrrmf_fact_key DESC) = 1\n), population AS (\n SELECT psgc_code, year, total_population FROM gold.fact_population\n WHERE year = (SELECT MAX(year) FROM gold.fact_population) AND psgc_code IS NOT NULL\n)\nSELECT lm.psgc_code, lm.lgu_name, COALESCE(lm.province_name, 'No province assignment') AS province_name,\n COALESCE(lr.region, 'Region unavailable') AS region, lm.income_classification, lm.geographic_level,\n pop.total_population, r.population_exposure_score, r.earthquake_activity_score, r.risk_score,\n r.risk_tertile, COALESCE(r.risk_level, 'Not scored') AS risk_level,\n p.cmci_capacity_score, p.ldrrmf_utilization_score, p.preparedness_score, p.preparedness_gap,\n p.preparedness_tertile, p.preparedness_gap_rank, p.cmci_year, p.fiscal_year,\n COALESCE(v.priority_category, 'Not classified') AS priority_category,\n COALESCE(r.population_year, pop.year) AS population_year, r.risk_window_start, r.risk_window_end, r.calculated_at,\n r.run_id,\n CASE WHEN r.psgc_code IS NULL THEN 'LGU absent from Platinum'\n      WHEN r.population_exposure_score IS NULL THEN 'Population unavailable'\n      WHEN r.earthquake_activity_score IS NULL THEN 'Earthquake components unavailable'\n      ELSE 'Scored' END AS risk_status,\n CASE WHEN p.psgc_code IS NULL THEN 'Snapshot unavailable or inconsistent'\n      WHEN p.cmci_capacity_score IS NULL AND p.ldrrmf_utilization_score IS NULL THEN 'CMCI and LDRRMF unavailable'\n      WHEN p.cmci_capacity_score IS NULL THEN 'CMCI incomplete or unavailable'\n      WHEN p.ldrrmf_utilization_score IS NULL THEN 'LDRRMF unavailable or zero denominator'\n      ELSE 'Scored' END AS preparedness_status\nFROM reference.lgu_master lm\nLEFT JOIN latest_region lr ON lm.psgc_code = lr.psgc_code\nLEFT JOIN population pop ON lm.psgc_code = pop.psgc_code\nLEFT JOIN platinum.risk_level_by_lgu r ON lm.psgc_code = r.psgc_code\nLEFT JOIN platinum.preparedness_gap_by_lgu p ON lm.psgc_code = p.psgc_code AND r.run_id = p.run_id\nLEFT JOIN platinum.vulnerability_priority_by_lgu v ON lm.psgc_code = v.psgc_code AND r.run_id = v.run_id\nWHERE lm.is_active = true AND lm.geographic_level IN ('City', 'Mun', 'Municipality', 'City/Municipality')\n) scores WHERE priority_category = 'Highest priority'\nQUALIFY ROW_NUMBER() OVER (ORDER BY preparedness_gap DESC, psgc_code) <= 20",
+        "dimensions": [
+          {
+            "name": "psgc_code",
+            "expr": "psgc_code"
+          },
+          {
+            "name": "lgu_name",
+            "expr": "lgu_name",
+            "displayName": "LGU Name"
+          },
+          {
+            "name": "province_name",
+            "expr": "province_name",
+            "displayName": "Province"
+          },
+          {
+            "name": "region",
+            "expr": "region",
+            "displayName": "Region"
+          },
+          {
+            "name": "income_classification",
+            "expr": "income_classification",
+            "displayName": "Income Classification"
+          },
+          {
+            "name": "geographic_level",
+            "expr": "geographic_level"
+          },
+          {
+            "name": "risk_level",
+            "expr": "risk_level",
+            "displayName": "Risk Level"
+          },
+          {
+            "name": "risk_tertile",
+            "expr": "risk_tertile"
+          },
+          {
+            "name": "priority_category",
+            "expr": "priority_category",
+            "displayName": "Priority Category"
+          },
+          {
+            "name": "preparedness_tertile",
+            "expr": "preparedness_tertile"
+          },
+          {
+            "name": "preparedness_gap_rank",
+            "expr": "preparedness_gap_rank"
+          },
+          {
+            "name": "cmci_year",
+            "expr": "cmci_year"
+          },
+          {
+            "name": "fiscal_year",
+            "expr": "fiscal_year"
+          },
+          {
+            "name": "population_year",
+            "expr": "population_year",
+            "displayName": "Population Year"
+          },
+          {
+            "name": "risk_window_start",
+            "expr": "risk_window_start",
+            "displayName": "Risk Window Start"
+          },
+          {
+            "name": "risk_window_end",
+            "expr": "risk_window_end",
+            "displayName": "Risk Window End"
+          },
+          {
+            "name": "calculated_at",
+            "expr": "calculated_at",
+            "displayName": "Calculated At"
+          },
+          {
+            "name": "run_id",
+            "expr": "run_id",
+            "displayName": "Run Id"
+          },
+          {
+            "name": "risk_status",
+            "expr": "risk_status",
+            "displayName": "Risk Status"
+          },
+          {
+            "name": "preparedness_status",
+            "expr": "preparedness_status",
+            "displayName": "Preparedness Status"
+          }
+        ],
+        "measures": [
+          {
+            "name": "lgu_count",
+            "expr": "COUNT(DISTINCT psgc_code)",
+            "displayName": "LGU Count"
+          },
+          {
+            "name": "avg_risk_score",
+            "expr": "AVG(risk_score)",
+            "displayName": "Average Risk Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_preparedness_score",
+            "expr": "AVG(preparedness_score)",
+            "displayName": "Average Preparedness Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_preparedness_gap",
+            "expr": "AVG(preparedness_gap)",
+            "displayName": "Average Preparedness Gap",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_cmci_capacity_score",
+            "expr": "AVG(cmci_capacity_score)",
+            "displayName": "Average CMCI Capacity Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_ldrrmf_utilization_score",
+            "expr": "AVG(ldrrmf_utilization_score)",
+            "displayName": "Average LDRRMF Utilization Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "total_population",
+            "expr": "SUM(total_population)",
+            "displayName": "Total Population"
+          },
+          {
+            "name": "avg_population_exposure_score",
+            "expr": "AVG(population_exposure_score)",
+            "displayName": "Average Population Exposure Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_earthquake_activity_score",
+            "expr": "AVG(earthquake_activity_score)",
+            "displayName": "Average Earthquake Activity Score",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "risk_scored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN risk_score IS NOT NULL THEN psgc_code END)",
+            "displayName": "LGUs with risk score"
+          },
+          {
+            "name": "preparedness_scored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN preparedness_score IS NOT NULL THEN psgc_code END)",
+            "displayName": "LGUs with preparedness score"
+          },
+          {
+            "name": "unscored_count",
+            "expr": "COUNT(DISTINCT CASE WHEN risk_score IS NULL OR preparedness_score IS NULL THEN psgc_code END)",
+            "displayName": "LGUs with incomplete scores"
+          },
+          {
+            "name": "highest_priority_count",
+            "expr": "COUNT(DISTINCT CASE WHEN priority_category = 'Highest priority' THEN psgc_code END)",
+            "displayName": "Highest priority LGUs"
+          }
+        ]
+      }
+    },
+    {
+      "name": "indicator_priorities",
+      "displayName": "Preparedness indicator priorities",
+      "config": {
+        "version": "1.1",
+        "source": "SELECT d.indicator_code, d.pillar_name, d.indicator_name,\n p.cmci_year, p.mean_indicator_percentile, p.priority_lgu_count, p.priority_rank,\n CASE WHEN p.indicator_code IS NULL THEN 'No calculated highest-priority cohort' ELSE 'Calculated' END AS coverage_status\nFROM gold.dim_cmci_indicator d\nLEFT JOIN platinum.cmci_preparedness_priority_by_indicator p ON d.indicator_code = p.indicator_code\n AND p.run_id = (SELECT MAX(run_id) FROM platinum.vulnerability_priority_by_lgu)\n",
+        "dimensions": [
+          {
+            "name": "indicator_code",
+            "expr": "indicator_code",
+            "displayName": "Indicator Code"
+          },
+          {
+            "name": "pillar_name",
+            "expr": "pillar_name",
+            "displayName": "Pillar Name"
+          },
+          {
+            "name": "indicator_name",
+            "expr": "indicator_name",
+            "displayName": "Indicator Name"
+          },
+          {
+            "name": "cmci_year",
+            "expr": "cmci_year",
+            "displayName": "Cmci Year"
+          },
+          {
+            "name": "priority_rank",
+            "expr": "priority_rank",
+            "displayName": "Priority Rank"
+          },
+          {
+            "name": "coverage_status",
+            "expr": "coverage_status",
+            "displayName": "Coverage Status"
+          },
+          {
+            "name": "priority_year",
+            "expr": "COALESCE(CAST(cmci_year AS STRING), 'No cohort')",
+            "displayName": "CMCI cohort year"
+          }
+        ],
+        "measures": [
+          {
+            "name": "indicator_count",
+            "expr": "COUNT(DISTINCT indicator_code)",
+            "displayName": "Approved indicators"
+          },
+          {
+            "name": "scored_indicator_count",
+            "expr": "COUNT(mean_indicator_percentile)",
+            "displayName": "Calculated priority indicators"
+          },
+          {
+            "name": "mean_percentile",
+            "expr": "AVG(mean_indicator_percentile)",
+            "displayName": "Mean indicator percentile (0–100)"
+          },
+          {
+            "name": "priority_lgu_count",
+            "expr": "MAX(priority_lgu_count)",
+            "displayName": "Contributing LGUs"
+          }
+        ]
+      }
+    }
+  ],
+  "pages": [
+    {
+      "name": "8ef2e09e",
+      "displayName": "Earthquake Risk Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "p1_header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Earthquake risk level\n",
+                "Experimental v1: relative percentiles and tertiles; approximate 2023 boundaries. Missing required inputs remain unscored. Population density, income class and infrastructure are not components of the risk formula."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "p1_total_lgus",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(lgu_count)",
+                      "expression": "MEASURE(`lgu_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Active cities / municipalities"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(lgu_count)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p1_risk_coverage",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(risk_scored_count)",
+                      "expression": "MEASURE(`risk_scored_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "LGUs with risk score"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(risk_scored_count)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p1_avg_pop_exposure",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(avg_population_exposure_score)",
+                      "expression": "MEASURE(`avg_population_exposure_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean population percentile (0–100)"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_population_exposure_score)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p1_avg_eq_activity",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(avg_earthquake_activity_score)",
+                      "expression": "MEASURE(`avg_earthquake_activity_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean earthquake activity (0–100)"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_earthquake_activity_score)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p1_lgus_by_risk",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "risk_level",
+                      "expression": "`risk_level`"
+                    },
+                    {
+                      "name": "measure(lgu_count)",
+                      "expression": "MEASURE(`lgu_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "LGUs by risk level (includes unscored)"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "risk_level",
+                  "displayName": "Risk Level",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(lgu_count)",
+                  "displayName": "LGUs by risk level (includes unscored)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "risk_level",
+                  "displayName": "Risk Level",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p1_top_risk_lgus",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "top_risk",
+                  "fields": [
+                    {
+                      "name": "lgu_name",
+                      "expression": "`lgu_name`"
+                    },
+                    {
+                      "name": "measure(avg_risk_score)",
+                      "expression": "MEASURE(`avg_risk_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Top 20 scored LGUs by risk (0–10,000)"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "lgu_name",
+                  "displayName": "Lgu Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_risk_score)",
+                  "displayName": "Top 20 scored LGUs by risk (0–10,000)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "lgu_name",
+                  "displayName": "Lgu Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p1_risk_by_province",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "province_name",
+                      "expression": "`province_name`"
+                    },
+                    {
+                      "name": "measure(avg_risk_score)",
+                      "expression": "MEASURE(`avg_risk_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean risk by province — scored LGUs only"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "province_name",
+                  "displayName": "Province Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_risk_score)",
+                  "displayName": "Mean risk by province — scored LGUs only",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "province_name",
+                  "displayName": "Province Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p1_pop_exposure_by_province",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "risk_status",
+                      "expression": "`risk_status`"
+                    },
+                    {
+                      "name": "measure(lgu_count)",
+                      "expression": "MEASURE(`lgu_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Population score coverage by status"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "risk_status",
+                  "displayName": "Risk Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(lgu_count)",
+                  "displayName": "Population score coverage by status",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "risk_status",
+                  "displayName": "Risk Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 11,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p1_risk_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "psgc_code",
+                      "expression": "`psgc_code`"
+                    },
+                    {
+                      "name": "lgu_name",
+                      "expression": "`lgu_name`"
+                    },
+                    {
+                      "name": "province_name",
+                      "expression": "`province_name`"
+                    },
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    },
+                    {
+                      "name": "risk_level",
+                      "expression": "`risk_level`"
+                    },
+                    {
+                      "name": "risk_status",
+                      "expression": "`risk_status`"
+                    },
+                    {
+                      "name": "population_year",
+                      "expression": "`population_year`"
+                    },
+                    {
+                      "name": "risk_window_start",
+                      "expression": "`risk_window_start`"
+                    },
+                    {
+                      "name": "risk_window_end",
+                      "expression": "`risk_window_end`"
+                    },
+                    {
+                      "name": "measure(avg_population_exposure_score)",
+                      "expression": "MEASURE(`avg_population_exposure_score`)"
+                    },
+                    {
+                      "name": "measure(avg_earthquake_activity_score)",
+                      "expression": "MEASURE(`avg_earthquake_activity_score`)"
+                    },
+                    {
+                      "name": "measure(avg_risk_score)",
+                      "expression": "MEASURE(`avg_risk_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Risk scores, coverage and event window"
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "psgc_code"
+                  },
+                  {
+                    "fieldName": "lgu_name"
+                  },
+                  {
+                    "fieldName": "province_name"
+                  },
+                  {
+                    "fieldName": "region"
+                  },
+                  {
+                    "fieldName": "risk_level"
+                  },
+                  {
+                    "fieldName": "risk_status"
+                  },
+                  {
+                    "fieldName": "population_year"
+                  },
+                  {
+                    "fieldName": "risk_window_start"
+                  },
+                  {
+                    "fieldName": "risk_window_end"
+                  },
+                  {
+                    "fieldName": "measure(avg_population_exposure_score)"
+                  },
+                  {
+                    "fieldName": "measure(avg_earthquake_activity_score)"
+                  },
+                  {
+                    "fieldName": "measure(avg_risk_score)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 12,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "p1_avg_risk",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(avg_risk_score)",
+                      "expression": "MEASURE(`avg_risk_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean risk score (0–10,000)"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_risk_score)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 24,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "preparedness_gap",
+      "displayName": "Preparedness Gap Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "p2_header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Preparedness and experimental gap\n",
+                "Preparedness = CMCI capacity + LDRRMF utilization. Gap = preparedness − risk, ranked descending as approved. The scales differ: this is an experimental ordering aid, not a calibrated deficit. Incomplete inputs remain null; source years are shown."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "p2_avg_gap",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(avg_preparedness_gap)",
+                      "expression": "MEASURE(`avg_preparedness_gap`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean experimental gap"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_preparedness_gap)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p2_avg_prep_score",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(avg_preparedness_score)",
+                      "expression": "MEASURE(`avg_preparedness_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean preparedness score"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_preparedness_score)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p2_avg_cmci",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(avg_cmci_capacity_score)",
+                      "expression": "MEASURE(`avg_cmci_capacity_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean CMCI capacity (0–100)"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_cmci_capacity_score)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p2_avg_ldrrmf",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(avg_ldrrmf_utilization_score)",
+                      "expression": "MEASURE(`avg_ldrrmf_utilization_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean LDRRMF utilization (%)"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_ldrrmf_utilization_score)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p2_gap_by_province",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "province_name",
+                      "expression": "`province_name`"
+                    },
+                    {
+                      "name": "measure(avg_preparedness_gap)",
+                      "expression": "MEASURE(`avg_preparedness_gap`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean experimental gap by province"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "province_name",
+                  "displayName": "Province Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_preparedness_gap)",
+                  "displayName": "Mean experimental gap by province",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "province_name",
+                  "displayName": "Province Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p2_top_gap_lgus",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "top_gap",
+                  "fields": [
+                    {
+                      "name": "lgu_name",
+                      "expression": "`lgu_name`"
+                    },
+                    {
+                      "name": "measure(avg_preparedness_gap)",
+                      "expression": "MEASURE(`avg_preparedness_gap`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Top 20 gaps — approved descending order"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "lgu_name",
+                  "displayName": "Lgu Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_preparedness_gap)",
+                  "displayName": "Top 20 gaps — approved descending order",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "lgu_name",
+                  "displayName": "Lgu Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p2_prep_by_province",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "province_name",
+                      "expression": "`province_name`"
+                    },
+                    {
+                      "name": "measure(avg_preparedness_score)",
+                      "expression": "MEASURE(`avg_preparedness_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean preparedness by province"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "province_name",
+                  "displayName": "Province Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_preparedness_score)",
+                  "displayName": "Mean preparedness by province",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "province_name",
+                  "displayName": "Province Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p2_coverage",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "preparedness_status",
+                      "expression": "`preparedness_status`"
+                    },
+                    {
+                      "name": "measure(lgu_count)",
+                      "expression": "MEASURE(`lgu_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Preparedness input coverage"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "preparedness_status",
+                  "displayName": "Preparedness Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(lgu_count)",
+                  "displayName": "Preparedness input coverage",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "preparedness_status",
+                  "displayName": "Preparedness Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 11,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p2_prep_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "psgc_code",
+                      "expression": "`psgc_code`"
+                    },
+                    {
+                      "name": "lgu_name",
+                      "expression": "`lgu_name`"
+                    },
+                    {
+                      "name": "province_name",
+                      "expression": "`province_name`"
+                    },
+                    {
+                      "name": "cmci_year",
+                      "expression": "`cmci_year`"
+                    },
+                    {
+                      "name": "fiscal_year",
+                      "expression": "`fiscal_year`"
+                    },
+                    {
+                      "name": "preparedness_status",
+                      "expression": "`preparedness_status`"
+                    },
+                    {
+                      "name": "preparedness_gap_rank",
+                      "expression": "`preparedness_gap_rank`"
+                    },
+                    {
+                      "name": "measure(avg_risk_score)",
+                      "expression": "MEASURE(`avg_risk_score`)"
+                    },
+                    {
+                      "name": "measure(avg_preparedness_score)",
+                      "expression": "MEASURE(`avg_preparedness_score`)"
+                    },
+                    {
+                      "name": "measure(avg_preparedness_gap)",
+                      "expression": "MEASURE(`avg_preparedness_gap`)"
+                    },
+                    {
+                      "name": "measure(avg_cmci_capacity_score)",
+                      "expression": "MEASURE(`avg_cmci_capacity_score`)"
+                    },
+                    {
+                      "name": "measure(avg_ldrrmf_utilization_score)",
+                      "expression": "MEASURE(`avg_ldrrmf_utilization_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "LGU preparedness components, source years and gap"
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "psgc_code"
+                  },
+                  {
+                    "fieldName": "lgu_name"
+                  },
+                  {
+                    "fieldName": "province_name"
+                  },
+                  {
+                    "fieldName": "cmci_year"
+                  },
+                  {
+                    "fieldName": "fiscal_year"
+                  },
+                  {
+                    "fieldName": "preparedness_status"
+                  },
+                  {
+                    "fieldName": "preparedness_gap_rank"
+                  },
+                  {
+                    "fieldName": "measure(avg_risk_score)"
+                  },
+                  {
+                    "fieldName": "measure(avg_preparedness_score)"
+                  },
+                  {
+                    "fieldName": "measure(avg_preparedness_gap)"
+                  },
+                  {
+                    "fieldName": "measure(avg_cmci_capacity_score)"
+                  },
+                  {
+                    "fieldName": "measure(avg_ldrrmf_utilization_score)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 12,
+            "height": 7
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "vulnerable_lgus",
+      "displayName": "Vulnerable LGUs",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "p3_header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Which LGUs have high risk and low preparedness?\n",
+                "Highest priority = high-risk tertile and low-preparedness tertile. Compare the two score axes separately; their scales differ. LGUs lacking either component remain Not classified, not Lower priority."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "p3_highest_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(highest_priority_count)",
+                      "expression": "MEASURE(`highest_priority_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Highest priority LGUs"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(highest_priority_count)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p3_risk_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(risk_scored_count)",
+                      "expression": "MEASURE(`risk_scored_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "LGUs with risk score"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(risk_scored_count)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p3_prep_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(preparedness_scored_count)",
+                      "expression": "MEASURE(`preparedness_scored_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "LGUs with preparedness score"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(preparedness_scored_count)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p3_missing_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(unscored_count)",
+                      "expression": "MEASURE(`unscored_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "LGUs with incomplete scores"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(unscored_count)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p3_categories",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "priority_category",
+                      "expression": "`priority_category`"
+                    },
+                    {
+                      "name": "measure(lgu_count)",
+                      "expression": "MEASURE(`lgu_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "LGUs by vulnerability category"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "priority_category",
+                  "displayName": "Priority Category",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(lgu_count)",
+                  "displayName": "LGUs by vulnerability category",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "priority_category",
+                  "displayName": "Priority Category",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p3_highest_lgus",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "highest_priority",
+                  "fields": [
+                    {
+                      "name": "lgu_name",
+                      "expression": "`lgu_name`"
+                    },
+                    {
+                      "name": "measure(avg_preparedness_gap)",
+                      "expression": "MEASURE(`avg_preparedness_gap`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Highest priority LGUs — top 20 descending gaps"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "lgu_name",
+                  "displayName": "Lgu Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_preparedness_gap)",
+                  "displayName": "Highest priority LGUs — top 20 descending gaps",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "lgu_name",
+                  "displayName": "Lgu Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p3_details",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "psgc_code",
+                      "expression": "`psgc_code`"
+                    },
+                    {
+                      "name": "lgu_name",
+                      "expression": "`lgu_name`"
+                    },
+                    {
+                      "name": "province_name",
+                      "expression": "`province_name`"
+                    },
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    },
+                    {
+                      "name": "risk_level",
+                      "expression": "`risk_level`"
+                    },
+                    {
+                      "name": "priority_category",
+                      "expression": "`priority_category`"
+                    },
+                    {
+                      "name": "risk_status",
+                      "expression": "`risk_status`"
+                    },
+                    {
+                      "name": "preparedness_status",
+                      "expression": "`preparedness_status`"
+                    },
+                    {
+                      "name": "preparedness_gap_rank",
+                      "expression": "`preparedness_gap_rank`"
+                    },
+                    {
+                      "name": "measure(avg_risk_score)",
+                      "expression": "MEASURE(`avg_risk_score`)"
+                    },
+                    {
+                      "name": "measure(avg_preparedness_score)",
+                      "expression": "MEASURE(`avg_preparedness_score`)"
+                    },
+                    {
+                      "name": "measure(avg_preparedness_gap)",
+                      "expression": "MEASURE(`avg_preparedness_gap`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "All LGUs: risk, preparedness and vulnerability"
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "psgc_code"
+                  },
+                  {
+                    "fieldName": "lgu_name"
+                  },
+                  {
+                    "fieldName": "province_name"
+                  },
+                  {
+                    "fieldName": "region"
+                  },
+                  {
+                    "fieldName": "risk_level"
+                  },
+                  {
+                    "fieldName": "priority_category"
+                  },
+                  {
+                    "fieldName": "risk_status"
+                  },
+                  {
+                    "fieldName": "preparedness_status"
+                  },
+                  {
+                    "fieldName": "preparedness_gap_rank"
+                  },
+                  {
+                    "fieldName": "measure(avg_risk_score)"
+                  },
+                  {
+                    "fieldName": "measure(avg_preparedness_score)"
+                  },
+                  {
+                    "fieldName": "measure(avg_preparedness_gap)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 12,
+            "height": 7
+          }
+        }
+      ],
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "preparedness_priorities",
+      "displayName": "Preparedness Priorities",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "p4_header",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Which preparedness indicators should be prioritized?\n",
+                "Lower CMCI indicator percentiles identify relative weaknesses within the calculated highest-priority LGU cohort. Priorities are grouped by CMCI year. If no eligible cohort exists, the approved indicators remain listed without fabricated priority scores."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "p4_lgu_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "lgu_risk_prep",
+                  "fields": [
+                    {
+                      "name": "measure(highest_priority_count)",
+                      "expression": "MEASURE(`highest_priority_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Highest priority LGUs"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(highest_priority_count)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p4_indicator_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "indicator_priorities",
+                  "fields": [
+                    {
+                      "name": "measure(indicator_count)",
+                      "expression": "MEASURE(`indicator_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Approved CMCI indicators"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(indicator_count)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p4_scored_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "indicator_priorities",
+                  "fields": [
+                    {
+                      "name": "measure(scored_indicator_count)",
+                      "expression": "MEASURE(`scored_indicator_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Calculated priority indicators"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(scored_indicator_count)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p4_mean",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "indicator_priorities",
+                  "fields": [
+                    {
+                      "name": "measure(mean_percentile)",
+                      "expression": "MEASURE(`mean_percentile`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean cohort indicator percentile"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(mean_percentile)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 3,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "p4_weakest",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "indicator_priorities",
+                  "fields": [
+                    {
+                      "name": "indicator_name",
+                      "expression": "`indicator_name`"
+                    },
+                    {
+                      "name": "measure(mean_percentile)",
+                      "expression": "MEASURE(`mean_percentile`)"
+                    },
+                    {
+                      "name": "priority_year",
+                      "expression": "`priority_year`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Indicator weaknesses among highest-priority LGUs"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "indicator_name",
+                  "displayName": "Indicator Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(mean_percentile)",
+                  "displayName": "Indicator weaknesses among highest-priority LGUs",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "priority_year",
+                  "displayName": "CMCI year",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p4_pillars",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "indicator_priorities",
+                  "fields": [
+                    {
+                      "name": "pillar_name",
+                      "expression": "`pillar_name`"
+                    },
+                    {
+                      "name": "measure(mean_percentile)",
+                      "expression": "MEASURE(`mean_percentile`)"
+                    },
+                    {
+                      "name": "priority_year",
+                      "expression": "`priority_year`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Mean priority percentile by pillar"
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pillar_name",
+                  "displayName": "Pillar Name",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(mean_percentile)",
+                  "displayName": "Mean priority percentile by pillar",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "priority_year",
+                  "displayName": "CMCI year",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p4_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "indicator_priorities",
+                  "fields": [
+                    {
+                      "name": "pillar_name",
+                      "expression": "`pillar_name`"
+                    },
+                    {
+                      "name": "indicator_code",
+                      "expression": "`indicator_code`"
+                    },
+                    {
+                      "name": "indicator_name",
+                      "expression": "`indicator_name`"
+                    },
+                    {
+                      "name": "cmci_year",
+                      "expression": "`cmci_year`"
+                    },
+                    {
+                      "name": "priority_rank",
+                      "expression": "`priority_rank`"
+                    },
+                    {
+                      "name": "coverage_status",
+                      "expression": "`coverage_status`"
+                    },
+                    {
+                      "name": "measure(mean_percentile)",
+                      "expression": "MEASURE(`mean_percentile`)"
+                    },
+                    {
+                      "name": "measure(priority_lgu_count)",
+                      "expression": "MEASURE(`priority_lgu_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Preparedness actions: indicator scores and available coverage"
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "pillar_name"
+                  },
+                  {
+                    "fieldName": "indicator_code"
+                  },
+                  {
+                    "fieldName": "indicator_name"
+                  },
+                  {
+                    "fieldName": "cmci_year"
+                  },
+                  {
+                    "fieldName": "priority_rank"
+                  },
+                  {
+                    "fieldName": "coverage_status"
+                  },
+                  {
+                    "fieldName": "measure(mean_percentile)"
+                  },
+                  {
+                    "fieldName": "measure(priority_lgu_count)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 12,
+            "height": 7
+          }
+        }
+      ],
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}

@@ -15,8 +15,7 @@ CREATE TABLE IF NOT EXISTS ahon.silver.philvolcs_earthquake_data_clean (
     _row_hash STRING
 );
 
-MERGE INTO ahon.silver.philvolcs_earthquake_data_clean AS target
-USING (
+CREATE OR REPLACE TEMP VIEW phivolcs_event_candidate AS
     WITH parsed AS (
         SELECT
             bronze._source_name,
@@ -91,6 +90,7 @@ USING (
         _ingested_at,
         _batch_id,
         _row_hash
+<<<<<<< Updated upstream
     FROM deduped
     WHERE rn = 1
 ) AS source
@@ -98,3 +98,44 @@ ON target.id = source.id
 WHEN MATCHED THEN UPDATE SET *
 WHEN NOT MATCHED THEN INSERT *
 WHEN NOT MATCHED BY SOURCE THEN DELETE;
+=======
+    FROM valid
+UNION ALL
+SELECT * FROM ahon.silver.philvolcs_earthquake_data_clean;
+
+CREATE OR REPLACE TEMP VIEW phivolcs_event_conflicts AS
+SELECT count(*) AS conflict_count
+FROM (
+    SELECT id FROM phivolcs_event_candidate GROUP BY id
+    HAVING count(DISTINCT named_struct(
+        'event_time', event_time, 'latitude', latitude, 'longitude', longitude,
+        'depth', depth, 'magnitude', magnitude, 'location', location_description
+    )) > 1
+);
+
+INSERT INTO ahon.monitoring.dq_result
+SELECT uuid(), current_timestamp(), 'philvolcs_earthquake',
+    'ahon.silver.philvolcs_earthquake_data_clean',
+    'event_attributes_consistent_for_key', 'BLOCKING',
+    CASE WHEN conflict_count = 0 THEN 'PASS' ELSE 'FAIL' END,
+    (SELECT count(*) FROM phivolcs_event_candidate), conflict_count,
+    'Identical events may collapse; conflicting attributes block replacement'
+FROM phivolcs_event_conflicts;
+
+-- Retain historical Silver events even when the current Bronze snapshot shrinks.
+INSERT OVERWRITE TABLE ahon.silver.philvolcs_earthquake_data_clean
+SELECT
+    CASE WHEN conflict_count = 0 THEN id
+         ELSE cast(raise_error('PHIVOLCS event-key collision: conflicting attributes; Silver unchanged') AS BIGINT)
+    END AS id,
+    event_time, latitude, longitude, depth, magnitude, location_description,
+    month, year, _source_name, _source_ref, _ingested_at, _batch_id, _row_hash
+FROM (
+    SELECT *, row_number() OVER (
+        PARTITION BY id ORDER BY _ingested_at DESC, _batch_id DESC, _row_hash DESC
+    ) AS event_rank
+    FROM phivolcs_event_candidate
+) ranked
+CROSS JOIN phivolcs_event_conflicts
+WHERE event_rank = 1;
+>>>>>>> Stashed changes

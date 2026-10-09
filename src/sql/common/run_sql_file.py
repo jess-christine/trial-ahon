@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import os
 import re
@@ -151,7 +152,7 @@ def main() -> None:
     path = resolve_sql_path(
         args.sql_file or args.python_file,
         os.environ.get("AHON_REPOSITORY_ROOT"),
-        globals().get("__file__") or globals().get("filename"),
+        globals().get("__file__") or globals().get("filename") or inspect.currentframe().f_code.co_filename,
         os.getcwd(),
     )
     if args.python_file:

@@ -19,6 +19,23 @@ For automated execution, validate/deploy `databricks.yml` and `resources/ahon_pi
 
 ## Safe reruns
 
-Bronze validation is read-only and appends a new run ID each time. BLGF and PSGC Silver snapshots are rebuilt from their Bronze source while preserving duplicate rows. PSA uses its documented `geographic_location + census_year` merge key. CMCI uses Delta `MERGE` on its documented `psgc_code + year` key and selects the most recent complete source batch for that key. PHIVOLCS Silver uses its documented event key and retains all valid source observations.
+Bronze validation is read-only and appends a new run ID each time. BLGF and PSGC Silver snapshots are rebuilt from their Bronze source while preserving duplicate rows. PSA uses its documented `geographic_location + census_year` merge key. CMCI uses Delta `MERGE` on its documented `psgc_code + year` key and selects the most recent complete source batch for that key. PHIVOLCS Silver retains one identical event per documented key under decision 0009, preserving history and blocking conflicting attributes.
 
 Platinum metrics are experimental and use the owner-approved v1 assumptions documented in the [Platinum data dictionary](../architecture/data-dictionary/platinum_analytics.md). Do not present them as calibrated operational thresholds. Keep approximate-boundary matches labeled with their limitation. Do not match LDRRMF or events by free-text names or locations outside these approved rules.
+
+## Recovering CMCI without a source reload
+
+Run ingestion with `--only cmci_ingestion` to repair any HTML-only/partial row
+Bronze batch. Run medallion with `--only cmci_silver_status,cmci_silver_parse` to
+refresh pillars; unchanged approved source coverage causes no portal indicator
+requests. Inspect persisted `complete_html_batches_have_all_indicator_rows`,
+`complete_batch_lgu_year_count` and `silver_indicator_to_gold_fact_row_count`
+results before relying on Gold. The 2026-10-09 dev repair recovered 17,886 rows in
+each pillar and 626,010 Gold indicator rows, with no duplicate LGU-year grains.
+
+PHIVOLCS Silver now follows decision 0009: combine valid current Bronze with
+retained history, reject conflicting event attributes, and keep one identical
+event per existing key using deterministic ingestion/batch/hash ordering. Run
+`silver_phivolcs`, Gold, Silver/Gold validation and Platinum in dependency order.
+Do not delete historical Silver events merely because current Bronze is smaller.
+Gold still rejects any remaining duplicate event keys before spatial processing.

@@ -112,8 +112,18 @@ def main() -> None:
             * F.col("expected_year_count")
             * F.col("expected_indicator_count")
         )
-    ).select("batch_id")
-    bronze = spark.table(BRONZE_TABLE).join(complete_batches, "batch_id", "inner")
+    ).select("batch_id", "returned_value_count").distinct()
+    raw = spark.table(BRONZE_TABLE)
+    actual = raw.groupBy("batch_id").count()
+    broken_batches = complete_batches.join(actual, "batch_id", "left").filter(
+        F.coalesce(F.col("count"), F.lit(0)) != F.col("returned_value_count")
+    ).count()
+    if broken_batches:
+        raise ValueError(
+            f"{broken_batches} complete CMCI HTML batches do not reconcile to row Bronze; "
+            "run CMCI ingestion recovery before Silver"
+        )
+    bronze = raw.join(complete_batches.select("batch_id"), "batch_id", "inner")
     expected_labels = [
         label
         for indicators in INDICATORS_BY_PILLAR.values()
@@ -128,6 +138,17 @@ def main() -> None:
         .count()
     ):
         raise ValueError("Bronze CMCI contains unconfigured indicator labels")
+    approved = spark.table(f"{CATALOG}.reference.cmci_lgu_map").filter(
+        F.col("is_active") & F.col("reviewed") & (F.col("match_status") == "MATCHED")
+    ).select("psgc_code", "cmci_name")
+    for key in ("psgc_code", "cmci_name"):
+        if approved.groupBy(key).count().filter("count > 1").limit(1).count():
+            raise ValueError(f"Reviewed CMCI mapping has duplicate active {key} keys")
+    active = spark.table(f"{CATALOG}.reference.lgu_master").filter("is_active").select("psgc_code")
+    if approved.join(active, "psgc_code", "left_anti").limit(1).count():
+        raise ValueError("Reviewed CMCI mapping contains an inactive or unknown PSGC key")
+    if bronze.join(approved, ["psgc_code", "cmci_name"], "left_anti").limit(1).count():
+        raise ValueError("CMCI Bronze identity does not agree with the reviewed PSGC mapping")
     latest_rows = latest_lgu_year_batch(bronze)
     if (
         latest_rows.groupBy(*KEY_COLUMNS, "batch_id", "indicator_label")
@@ -140,12 +161,22 @@ def main() -> None:
             "Latest CMCI batch contains duplicate LGU-year-indicator keys"
         )
 
+    incomplete = latest_rows.groupBy(*KEY_COLUMNS).agg(
+        F.countDistinct("indicator_label").alias("indicator_count")
+    ).filter(F.col("indicator_count") != len(expected_labels)).count()
+    if incomplete:
+        raise ValueError(f"{incomplete} CMCI LGU-years lack the approved indicator set")
+    expected_rows = latest_rows.select(*KEY_COLUMNS).distinct().count()
+    if expected_rows == 0:
+        raise ValueError("No complete CMCI LGU-years available; Silver was not changed")
+    print(f"CMCI complete input: {expected_rows} LGU-years")
     for pillar_name, indicators in INDICATORS_BY_PILLAR.items():
         table_suffix = pillar_name.lower().replace(" ", "_")
         table_name = SILVER_PREFIX + table_suffix
         frame = build_pillar_frame(latest_rows, indicators)
         merge_pillar(spark, table_name, frame)
-        print(f"{table_name}: Silver upsert complete")
+        print(f"{table_name}: {expected_rows} LGU-years upserted")
+
 
 
 if __name__ == "__main__":

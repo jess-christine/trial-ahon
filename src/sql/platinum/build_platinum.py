@@ -28,7 +28,7 @@ def main() -> None:
     calculated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     lgu = spark.table(table("gold", "dim_lgu")).filter(
-        F.col("geographic_level").isin("City", "Municipality", "City/Municipality")
+        F.col("geographic_level").isin("City", "Mun", "Municipality", "City/Municipality")
     ).select("psgc_code")
     population = spark.table(table("gold", "fact_population")).filter(
         F.col("psgc_code").isNotNull()
@@ -78,7 +78,11 @@ def main() -> None:
     boundary_centroids = boundary.withColumn(
         "_centroid_geojson",
         F.expr("st_asgeojson(st_centroid(try_to_geometry(unhex(boundary_wkb_hex))))"),
+<<<<<<< Updated upstream
     ).withColumn("_boundary_geom", F.expr("try_to_geometry(unhex(boundary_wkb_hex))"))
+=======
+    ).withColumn("_boundary_geom", F.expr("st_setsrid(try_to_geometry(unhex(boundary_wkb_hex)), 4326)"))
+>>>>>>> Stashed changes
     for coordinate, function_name in (
         ("_xmin", "st_xmin"),
         ("_xmax", "st_xmax"),
@@ -286,6 +290,14 @@ def main() -> None:
         ("cmci_preparedness_priority_by_indicator", priority_indicators, ("cmci_year", "indicator_code"), None, ()),
     )
     validation_failures = []
+    expected_lgu_count = spark.table(table("gold", "dim_lgu")).count()
+    omitted_lgus = expected_lgu_count - counts["active_lgus"]
+    if omitted_lgus:
+        validation_failures.append("platinum:city_municipality_cohort_complete")
+    results.append((run_id, checked_at, "platinum", table("platinum", "risk_level_by_lgu"),
+        "city_municipality_cohort_complete", "BLOCKING", "FAIL" if omitted_lgus else "PASS",
+        counts["active_lgus"], max(omitted_lgus, 0),
+        json.dumps({"expected_gold_lgus": expected_lgu_count, "included_lgus": counts["active_lgus"]}, sort_keys=True)))
     for output_name, frame, key_columns, category_column, allowed_categories in output_specs:
         target = table("platinum", output_name)
         row_count = frame.count()

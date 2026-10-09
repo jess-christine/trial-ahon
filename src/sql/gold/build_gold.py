@@ -231,6 +231,9 @@ def build_fact_cmci_indicator(spark: SparkSession) -> None:
         ("psgc_code", "year", "indicator_code"),
         "fact_cmci_indicator",
     )
+    # Prevent an empty upstream refresh from replacing an existing good fact.
+    if not fact.limit(1).count():
+        raise ValueError("CMCI Silver is empty; fact_cmci_indicator was not replaced")
     replace_snapshot(spark, _table("ahon.gold.fact_cmci_indicator"), fact)
     print(f"{_table('ahon.gold.fact_cmci_indicator')}: {fact.count()} LGU-year-indicator rows")
 
@@ -327,7 +330,7 @@ def build_fact_ldrrmf(spark: SparkSession) -> None:
     reference = (
         spark.table(LGU_MASTER)
         .filter(F.col("is_active") == F.lit(True))
-        .filter(F.col("geographic_level").isin("City", "Municipality", "City/Municipality"))
+        .filter(F.col("geographic_level").isin("City", "Mun", "Municipality", "City/Municipality"))
         .select(
             F.col("lgu_name").alias("reference_lgu_name"),
             F.col("province_name").alias("reference_province_name"),
@@ -408,20 +411,29 @@ def build_fact_earthquake_event(spark: SparkSession) -> None:
     from pyspark.sql import functions as F
     from pyspark.sql.types import DecimalType, LongType
 
+<<<<<<< Updated upstream
     source = spark.table(PHIVOLCS_SILVER).dropDuplicates(["id"])
+=======
+    source = spark.table(PHIVOLCS_SILVER)
+    assert_unique(source, ("id",), "PHIVOLCS Silver event source")
+>>>>>>> Stashed changes
     boundary = (
         spark.table(
             _table("ahon.silver.geoportal_city_municipality_boundary_clean")
         )
         .join(
             spark.table(_table("ahon.gold.dim_lgu"))
-            .filter(F.col("geographic_level").isin("City", "Municipality", "City/Municipality"))
+            .filter(F.col("geographic_level").isin("City", "Mun", "Municipality", "City/Municipality"))
             .select("psgc_code"),
             "psgc_code",
             "inner",
         )
         .select("psgc_code", "boundary_wkb_hex")
+<<<<<<< Updated upstream
         .withColumn("_boundary_geom", F.expr("try_to_geometry(unhex(boundary_wkb_hex))"))
+=======
+        .withColumn("_boundary_geom", F.expr("st_setsrid(try_to_geometry(unhex(boundary_wkb_hex)), 4326)"))
+>>>>>>> Stashed changes
         .withColumn("_xmin", F.expr("st_xmin(_boundary_geom)"))
         .withColumn("_xmax", F.expr("st_xmax(_boundary_geom)"))
         .withColumn("_ymin", F.expr("st_ymin(_boundary_geom)"))

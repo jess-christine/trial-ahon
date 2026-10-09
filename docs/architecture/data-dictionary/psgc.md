@@ -73,3 +73,21 @@ Silver trims identifier and label fields, converts blank optional codes and labe
 ## Quality and limitations
 
 `src/sql/monitoring/bronze_quality.py` reports code format, required geography, duplicate code-version keys, and provenance checks to `ahon.monitoring.dq_result`. These source anomalies are warnings and do not alter Bronze. API coverage and active-status semantics are source-version dependent; consumers should use the reviewed reference table for canonical LGU joins.
+
+## Silver hierarchy key correction
+
+Bronze `reg`, `prv`, `mun`, and `bgy` values are source numeric components,
+not full 10-digit dimension keys, and remain unchanged. Silver resolves full
+region/province/municipality keys against explicit Reg/Prov/City/Mun records in
+the same source version, using the corresponding 2/5/7-digit PSGC prefix.
+Missing parent records produce null keys. Only Bgy rows populate `barangay_code`.
+Parent lookups use distinct code/version/level tuples to preserve source row count;
+source duplicates remain observable. Gold still uses active reviewed `lgu_master`
+and gives its reviewed province code precedence; historical hierarchy conflicts
+remain warnings. See the [PSA PSGC reference](https://psa.gov.ph/classification/psgc).
+
+The observed Q2_2021 code `133900000` identifies both Manila City and its
+statistical district. Silver preserves both source records; `unique_code_version`
+is a warning consistent with Bronze source-anomaly policy. This historical
+9-digit collision cannot supply an exact key to the reviewed 10-digit LGU
+reference. Canonical Gold key uniqueness remains blocking.

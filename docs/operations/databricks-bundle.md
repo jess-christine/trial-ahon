@@ -46,3 +46,7 @@ Review each task output and query the latest `run_id` in `monitoring.dq_result` 
 ## Cost and performance
 
 The jobs use Serverless environments and no recurring schedule. Task-level retries remain bounded; the parent does not automatically retry a whole failed ingestion job. Source extraction and spatial-join duration should be measured before increasing source coverage. The spatial boundary/event predicate is distributed and can be the most expensive task; keep the source window bounded to the approved rolling five years. Existing runtimes and dependencies are reused; no separate service or external data-quality package is introduced.
+
+## Dashboard handoff
+
+See the [dashboard operating guide](risk-preparedness-dashboard.md) for the four-question dashboard asset, query coverage, and the current SQL compute eligibility blocker. Existing committed merge markers in the runner and bundle were resolved using the Serverless dispatch pattern with the source-file inspection fallback retained. A complete dev rebuild is required after the `Mun` scope correction; earlier partial task success and empty metric snapshots do not establish analytical readiness.

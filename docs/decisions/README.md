@@ -41,3 +41,4 @@ if it changes, write a new record and mark the old one
 | [0005](0005-bronze-quality-and-silver-mapping.md) | Bronze quality results and source Silver mappings | Accepted |
 | [0006](0006-city-municipality-analysis-grain.md) | City/municipality analysis grain | Accepted |
 | [0007](0007-experimental-platinum-v1.md) | Experimental city/municipality Platinum v1 | Accepted for experimental v1 |
+| [0009](0009-identical-earthquake-silver-events.md) | Identical earthquake events in Silver | Accepted |

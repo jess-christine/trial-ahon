@@ -3,7 +3,7 @@
 - **Purpose:** retain validated PHIVOLCS earthquake observations for later hazard analysis.
 - **Source and lineage:** `ahon.silver.philvolcs_earthquake_data_clean`, from the raw PHIVOLCS source rows. Silver preserves source fields and provenance; the Gold schema follows the supplied target model.
 - **One row is:** one valid PHIVOLCS event observation.
-- **Key:** `earthquake_fact_key`, using the Silver deterministic event key derived from time, coordinates, depth, and magnitude. Duplicate keys block Gold loading; source observations are not deduplicated.
+- **Key:** `earthquake_fact_key`, using the Silver deterministic event key derived from time, coordinates, depth, and magnitude. Duplicate keys block Gold loading; identical source observations are deduplicated in Silver under decision [0009](../../decisions/0009-identical-earthquake-silver-events.md).
 - **Built by:** `src/sql/gold/build_gold.py`; schema in `src/sql/00_setup/07_gold_setup.sql`.
 - **Business questions:** provides valid earthquake event measures and approximate LGU assignment for experimental risk analysis under decision [0007](../../decisions/0007-experimental-platinum-v1.md).
 
@@ -23,3 +23,9 @@
 ## Quality and operations
 
 Only rows already accepted by documented PHIVOLCS Silver validity rules are loaded. Source-to-Silver valid-row counts, Gold row counts, key uniqueness, coordinate ranges, and non-negative depth/magnitude are checked. Unmatched events warn and remain present. Gold is rebuilt from Silver; reruns do not accumulate duplicates. The five-year Platinum window currently compares parsed timestamps in UTC; timezone confirmation is required before interpreting events close to its cutoff.
+
+The dev audit on 2026-10-09 found 74 repeated event keys (79 extra identical
+observations). The owner subsequently authorized Silver cleanup under decision
+0009. Gold checks Silver key uniqueness before its spatial join. Geometry is read
+from `boundary_wkb_hex`; only scalar event/code columns pass to grouping, avoiding
+unsupported Spark Connect geometry schema conversion. The matching rule is unchanged.

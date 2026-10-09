@@ -74,7 +74,7 @@ def main() -> None:
     expected = (
         spark.table(f"{catalog}.reference.lgu_master")
         .filter(F.col("is_active") == F.lit(True))
-        .filter(F.col("geographic_level").isin("City", "Municipality", "City/Municipality"))
+        .filter(F.col("geographic_level").isin("City", "Mun", "Municipality", "City/Municipality"))
         .select("psgc_code")
         .distinct()
     )
@@ -122,6 +122,7 @@ def main() -> None:
     )
     checks = [
         ("boundary_code_format", invalid_codes, "BLOCKING"),
+        ("boundary_has_mapped_codes", int(silver.filter(F.col("psgc_code").isNotNull()).limit(1).count() == 0), "BLOCKING"),
         ("boundary_code_unmatched", silver.filter(F.col("psgc_code").isNull()).count(), "WARNING"),
         ("boundary_codes_unique", duplicate_codes, "BLOCKING"),
         ("boundary_code_active_city_municipality", unknown_codes, "WARNING"),
@@ -149,10 +150,10 @@ def main() -> None:
     spark.createDataFrame(result_rows, schema).write.mode("append").saveAsTable(
         f"{catalog}.monitoring.dq_result"
     )
-    if not row_count or invalid_codes or duplicate_codes or malformed_geometry or non_polygon_geometry or out_of_bounds_geometry:
+    if any(failures and severity == "BLOCKING" for _, failures, severity in checks):
         raise RuntimeError(
             "Boundary contract failed: "
-            f"invalid codes={invalid_codes}, duplicate codes={duplicate_codes}, "
+            f"code property={property_name}, invalid codes={invalid_codes}, duplicate codes={duplicate_codes}, "
             f"malformed geometry={malformed_geometry}, non-polygons={non_polygon_geometry}, "
             f"out-of-bounds geometries={out_of_bounds_geometry}"
         )

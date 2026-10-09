@@ -51,3 +51,11 @@ class PlatinumContractTests(TestCase):
         self.assertIn('F.sum("total_expenditure")', PLATINUM)
         self.assertIn('"total_expenditure") / F.col("total_appropriation") * 100', PLATINUM)
 
+
+
+class ReviewedGeographyTests(TestCase):
+    def test_psa_municipality_code_is_included_at_every_reference_filter(self) -> None:
+        for path in ("src/sql/gold/build_gold.py", "src/sql/platinum/build_platinum.py", "src/sql/platinum/load_lgu_boundaries.py"):
+            source = (REPOSITORY_ROOT / path).read_text(encoding="utf-8")
+            self.assertNotIn('.isin("City", "Municipality", "City/Municipality")', source)
+            self.assertIn('.isin("City", "Mun", "Municipality", "City/Municipality")', source)

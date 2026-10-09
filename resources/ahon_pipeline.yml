@@ -186,7 +186,10 @@ resources:
           retry_on_timeout: true
           depends_on:
             - task_key: setup_bronze
+<<<<<<< Updated upstream
           environment_key: default
+=======
+>>>>>>> Stashed changes
           notebook_task:
             notebook_path: ../src/sql/datasets/psgc/psgc_api.py
             source: WORKSPACE

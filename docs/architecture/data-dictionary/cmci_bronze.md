@@ -39,7 +39,7 @@ CMCI complements hazard datasets by describing local competitiveness, capacity, 
 | `response_html` | string | Complete raw HTML returned by CMCI | Retained for audit and reprocessing |
 | `response_hash` | string | Stable SHA-256 hash of parsed source values | Used to detect changed responses |
 | `ingestion_timestamp` | timestamp (UTC) | Original pipeline ingestion timestamp | Retained for compatibility and source ordering |
-| `_source_name` | string | Dataset or feed that produced the row | Always `cmci_data_portal` |
+| `_source_name` | string | Dataset or feed that produced the row | Current feed label `cmci_indicator_batch_html` |
 | `_source_ref` | string | Sanitized CMCI endpoint used for the request | Must not contain keys, tokens, or credentials |
 | `_ingested_at` | timestamp (UTC) | When the row was written to Bronze | Standard Bronze provenance timestamp |
 | `_batch_id` | string | Ingestion run identifier | May match `batch_id` when one source request is one ingestion unit |
@@ -62,7 +62,7 @@ CMCI complements hazard datasets by describing local competitiveness, capacity, 
 | `raw_value` | string | Raw value returned by CMCI | Blank and `-` become `NULL` in Silver |
 | `response_hash` | string | Hash of the validated CMCI response | Links the row to its source response |
 | `ingestion_timestamp` | timestamp (UTC) | Original source ingestion timestamp | Retained for compatibility and latest-record selection |
-| `_source_name` | string | Dataset or feed that produced the row | Always `cmci_data_portal` |
+| `_source_name` | string | Dataset or feed that produced the row | Current feed label `cmci_indicator_batch_html` |
 | `_source_ref` | string | Sanitized CMCI endpoint used for the request | Must not contain keys, tokens, or credentials |
 | `_ingested_at` | timestamp (UTC) | When the row was written to Bronze | Standard Bronze provenance timestamp |
 | `_batch_id` | string | Ingestion run identifier | Links related rows from the same load run |
@@ -181,8 +181,38 @@ Unauthorized PSGC codes: 0
 ## Related Documentation
 
 - [PSGC Dataset](psgc.md)
-- [CMCI Mapping and Ingestion Decision](../decisions/0001-cmci-mapping-and-ingestion.md)
-- [Data Ingestion](ingestion.md)
-- [Source Profiles](source-profiles.md)
-- [Data Validation](validation.md)
-- [Operations Runbook](../operations/runbook.md)
+- [CMCI Mapping and Ingestion Decision](../../decisions/0004-cmci-mapping-and-ingestion.md)
+- [Data Ingestion](../../operations/runbook.md)
+- [Source Profiles](../../data/cmci.md)
+- [Data Validation](../../operations/monitoring.md)
+- [Operations Runbook](../../operations/runbook.md)
+
+## Recovery and observed coverage
+
+Ingestion writes both raw HTML and parsed indicator rows. Reruns recover missing
+indicator rows from retained HTML, using batch/PSGC/indicator/year and response
+hash to avoid writing the same observation version again; no source reload or reviewed mapping overwrite is needed.
+The standalone default remains `test`; bundle execution explicitly configures
+`AHON_CMCI_RUN_MODE=full`. Approved coverage is read from reviewed active mappings,
+not a hard-coded sample count. Duplicate approved PSGC keys block ingestion.
+
+Silver reconciles each complete HTML batch to row Bronze, checks approved
+PSGC/source-name identity, one-to-one active reference mapping and the complete
+indicator set before any pillar merge,
+and rejects empty input. Table creation uses the serverless-compatible `error`
+write mode. Existing tables merge on PSGC/year; raw `-` and blank scores stay null.
+The monitoring job records HTML-to-row and pillar count reconciliation in
+`monitoring.dq_result`; Gold rejects an empty CMCI fact before replacing it.
+
+The dev audit on 2026-10-09 observed 1,626 approved mapped LGUs, 163 complete
+requests and 626,010 indicator observations (11 years, 35 indicators).
+The documented final CMCI scope remains 1,634; the additional eight mapping gaps
+need review. All 16 currently uncovered active PSGC LGUs remain visible as missing
+coverage, without copied parent values or zero scores. Expected current pillar
+coverage is 17,886 LGU-years; 17,974 remains the final documented target.
+
+The repaired row writer hashes all nine documented source fields, serializing
+the original ingestion timestamp as ISO 8601. Previously loaded rows used a
+smaller hash payload; those immutable hashes are retained. Recovery checks the
+documented observation key plus response hash, so a legacy hash does not cause
+identical recovered observations to be appended again.

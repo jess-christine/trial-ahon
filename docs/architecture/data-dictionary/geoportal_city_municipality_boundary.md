@@ -30,7 +30,7 @@
 | Column | Type | Description | Notes |
 | --- | --- | --- | --- |
 | `psgc_code` | string | Source boundary's PSGC code | Property name configured by `AHON_BOUNDARY_CODE_PROPERTY`; never inferred from names |
-| `boundary_geojson` | string | Polygon or MultiPolygon geometry | Coordinates must use WGS84 longitude/latitude (EPSG:4326) |
+| `boundary_wkb_hex` | string | Hexadecimal WKB Polygon or MultiPolygon geometry | Coordinates must use WGS84 longitude/latitude (EPSG:4326) |
 | `_source_name` | string | Source name | Carried from Bronze |
 | `_source_ref` | string | Landed file path | Carried from Bronze |
 | `_ingested_at` | timestamp (UTC) | Bronze load time | Carried from Bronze |
@@ -52,3 +52,20 @@ The owner supplied `lgu_spatial.parquet` from [BetterGov dataset 23](https://dat
 `src/sql/06_reference/prepare_lgu_boundaries.py` converts this small reference artifact to the existing loader's GeoJSON input. Run locally with `--parquet`, `--psgc-workbook`, `--geojson`, and `--crosswalk` paths. Preparation requires PyArrow and Shapely locally; they are not added to the deployed job dependencies. It checks explicit EPSG:4326/WKB metadata and polygon validity. Existing outputs are never overwritten. Retain the original Parquet beside the generated GeoJSON in the source volume.
 
 Mapping compares PH-prefixed identifiers with current PSGC and official historical correspondence codes, requiring exact name agreement (case and outer whitespace ignored). A globally unique exact reference name can resolve a changed code. No fuzzy matching, alias stripping, or manual code guesses are used. Unresolved or ambiguous codes remain null and are recorded in the crosswalk. All source attributes and original WKB bytes (hex) remain in GeoJSON properties, alongside mapping status/method/reference; SHA-256 covers the entire serialized feature. Bronze receives this explicitly prepared landing representation, not a claim of untouched provider GeoJSON. Silver geometry remains WGS84, and only valid active mapped keys can contribute to event assignment. Missing boundaries imply incomplete event assignment and proximity coverage.
+
+## Runtime contract alignment
+
+The supplied prepared GeoJSON uses `properties.psgc_code` for the reviewed
+10-digit crosswalk and `properties.geometry_wkb_hex` for geometry. The bundle
+selects `psgc_code`; it must not use the unrelated `PSGC` or original `PH...`
+identifiers. Silver, Gold and Platinum consume WKB consistently through
+`try_to_geometry(unhex(boundary_wkb_hex))`. Invalid geometry blocks the load;
+individual unmatched keys remain warnings, but an entirely unmapped boundary
+load is blocking. Platinum uses `st_distancespheroid` on WGS84 geometry for
+centroid distances in metres, consistent with the accepted proximity definition.
+Reruns use the retained source volume; no external boundary download is required.
+
+WKB may omit the CRS tag even though coordinates are documented WGS84. Gold and
+Platinum set the parsed polygon SRID to 4326 before comparing it with GeoJSON
+points. This tags the documented coordinate system without reprojecting or
+changing source coordinates, avoiding a 0-versus-4326 spatial-function error.

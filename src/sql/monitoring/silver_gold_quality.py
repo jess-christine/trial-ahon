@@ -134,7 +134,7 @@ def contracts() -> tuple[Contract, ...]:
             ),
             (
                 Rule("required_event_key", "BLOCKING", "id IS NULL OR event_time IS NULL"),
-                Rule("duplicate_event_key", "WARNING", key_columns=("id",)),
+                Rule("duplicate_event_key", "BLOCKING", key_columns=("id",)),
                 Rule("coordinates_valid", "BLOCKING", "latitude IS NULL OR latitude < -90 OR latitude > 90 OR longitude IS NULL OR longitude < -180 OR longitude > 180"),
                 Rule("measures_nonnegative", "BLOCKING", "depth IS NULL OR depth < 0 OR magnitude IS NULL OR magnitude < 0"),
             ),
@@ -152,7 +152,7 @@ def contracts() -> tuple[Contract, ...]:
             ),
             (
                 Rule("required_geographic_identity", "BLOCKING", "psgc_code IS NULL OR area_name IS NULL OR geographic_level IS NULL OR version IS NULL"),
-                Rule("unique_code_version", "BLOCKING", key_columns=("psgc_code", "version")),
+                Rule("unique_code_version", "WARNING", key_columns=("psgc_code", "version")),
                 Rule("psgc_code_format", "WARNING", "psgc_code NOT RLIKE '^[0-9]{10}$'"),
             ),
             ("version", "geographic_level"),
@@ -488,13 +488,14 @@ def main() -> None:
     if table_name("ahon.silver.philvolcs_earthquake_data_clean") in row_counts:
         quake = spark.table(table_name("ahon.bronze.philvolcs_earthquake_data"))
         parsed_time = F.expr("try_to_timestamp(`Date-Time`, 'dd MMMM yyyy - hh:mm a')")
-        valid_quake_count = quake.filter(
+        valid_quake_keys = quake.filter(
             (F.trim(F.col("Date-Time")) != "")
             & parsed_time.isNotNull()
             & F.col("Latitude").between(-90, 90)
             & F.col("Longitude").between(-180, 180)
             & (F.col("Depth") >= 0)
             & (F.col("Magnitude") >= 0)
+<<<<<<< Updated upstream
         ).select(
             F.xxhash64(
                 parsed_time,
@@ -504,14 +505,27 @@ def main() -> None:
                 F.col("Magnitude"),
             ).alias("id")
         ).distinct().count()
+=======
+        ).select(F.xxhash64(
+            parsed_time, "Latitude", "Longitude", "Depth", "Magnitude"
+        ).alias("id")).distinct()
+        silver_keys = spark.table(table_name("ahon.silver.philvolcs_earthquake_data_clean")).select("id").distinct()
+>>>>>>> Stashed changes
         record_reconciliation(
-            "silver",
-            "philvolcs_earthquake",
+            "silver", "philvolcs_earthquake",
             table_name("ahon.silver.philvolcs_earthquake_data_clean"),
-            "valid_bronze_silver_row_count",
-            valid_quake_count,
-            row_counts[table_name("ahon.silver.philvolcs_earthquake_data_clean")],
+            "valid_bronze_event_keys_present_in_silver",
+            valid_quake_keys.count(),
+            valid_quake_keys.join(silver_keys, "id", "inner").count(),
         )
+        historical_count = silver_keys.join(valid_quake_keys, "id", "left_anti").count()
+        results.append((run_id, checked_at, "philvolcs_earthquake",
+            table_name("ahon.silver.philvolcs_earthquake_data_clean"),
+            "historical_events_outside_current_bronze_snapshot", "WARNING",
+            result_status(historical_count, "WARNING"),
+            row_counts[table_name("ahon.silver.philvolcs_earthquake_data_clean")],
+            historical_count,
+            json.dumps({"layer": "silver", "policy": "retain historical valid events"})))
 
     complete_cmci_batches = table_name("ahon.silver.cmci_ingestion_batch_clean")
     cmci_pillars = [
@@ -526,6 +540,15 @@ def main() -> None:
             .filter(F.col("is_complete") == F.lit(True))
             .select("batch_id")
             .distinct()
+        )
+        batch_expected = spark.table(table_name("ahon.bronze.cmci_raw_indicator_batch_html")).join(batch_ids, "batch_id", "inner")
+        actual_counts = spark.table(table_name("ahon.bronze.cmci_raw_indicator")).groupBy("batch_id").count()
+        broken_batches = batch_expected.join(actual_counts, "batch_id", "left").filter(
+            F.coalesce(F.col("count"), F.lit(0)) != F.col("returned_value_count")
+        ).count()
+        record_reconciliation(
+            "silver", "cmci", complete_cmci_batches,
+            "complete_html_batches_have_all_indicator_rows", 0, broken_batches,
         )
         expected_pairs = (
             spark.table(table_name("ahon.bronze.cmci_raw_indicator"))
@@ -694,6 +717,8 @@ def main() -> None:
         (table_name("ahon.gold.fact_cmci_indicator"), "psgc_code", table_name("ahon.gold.dim_lgu"), "psgc_code"),
         (table_name("ahon.gold.fact_cmci_indicator"), "indicator_code", table_name("ahon.gold.dim_cmci_indicator"), "indicator_code"),
         (table_name("ahon.gold.fact_population"), "psgc_code", table_name("ahon.gold.dim_lgu"), "psgc_code"),
+        (table_name("ahon.gold.fact_ldrrmf"), "psgc_code", table_name("ahon.gold.dim_lgu"), "psgc_code"),
+        (table_name("ahon.gold.fact_earthquake_event"), "psgc_code", table_name("ahon.gold.dim_lgu"), "psgc_code"),
     )
     for child_table, child_column, parent_table, parent_column in foreign_keys:
         if not spark.catalog.tableExists(child_table) or not spark.catalog.tableExists(parent_table):
@@ -722,7 +747,7 @@ def main() -> None:
         status = result_status(missing_count, "BLOCKING")
         if status == "FAIL":
             blocking.append(f"{child_table}:{child_column}_foreign_key")
-        results.append((run_id, checked_at, "cmci", child_table, f"{child_column}_foreign_key", "BLOCKING", status, key_count, missing_count, json.dumps({"layer": "gold", "parent_table": parent_table, "parent_column": parent_column})))
+        results.append((run_id, checked_at, child_table.rsplit(".", 1)[-1], child_table, f"{child_column}_foreign_key", "BLOCKING", status, key_count, missing_count, json.dumps({"layer": "gold", "parent_table": parent_table, "parent_column": parent_column})))
 
     schema = StructType(
         [
