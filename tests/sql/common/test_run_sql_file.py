@@ -1,13 +1,23 @@
 from __future__ import annotations
 
+import json
+import os
 import sys
+import tempfile
 from pathlib import Path
 from unittest import TestCase
+from unittest.mock import patch
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPOSITORY_ROOT / "src" / "sql" / "common"))
 
-from run_sql_file import render_sql, resolve_sql_path, split_statements  # noqa: E402
+from run_sql_file import (
+    main,
+    parse_task_config,
+    render_sql,
+    resolve_sql_path,
+    split_statements,
+)
 
 
 class SqlFileRunnerTests(TestCase):
@@ -61,3 +71,29 @@ class SqlFileRunnerTests(TestCase):
             path,
             REPOSITORY_ROOT / "src/sql/00_setup/00_catalog_schema_setup.sql",
         )
+
+    def test_python_dispatch_sets_config_before_import_and_hides_runner_flags(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "task_settings.py").write_text("import os\nCATALOG = os.environ['AHON_CATALOG']\n")
+            result = root / "result.txt"
+            target = root / "task.py"
+            target.write_text(
+                "import sys\nfrom pathlib import Path\nfrom task_settings import CATALOG\n"
+                "assert sys.argv == [__file__]\n"
+                f"Path({str(result)!r}).write_text(CATALOG)\n"
+            )
+            args = ["runner", "--python-file", str(target), "--config-json",
+                    json.dumps({"AHON_CATALOG": "ahon_test"})]
+            original_path = sys.path[:]
+            with patch.object(sys, "argv", args), patch.dict(os.environ):
+                main()
+                self.assertEqual(sys.argv, args)
+                self.assertEqual(sys.path, original_path)
+            self.assertEqual(result.read_text(), "ahon_test")
+            sys.modules.pop("task_settings", None)
+
+    def test_invalid_task_config_rejects_non_ahon_or_non_string_values(self) -> None:
+        for value in ('[]', '{"PATH": "bad"}', '{"AHON_CATALOG": 1}'):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                parse_task_config(value)

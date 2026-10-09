@@ -25,24 +25,27 @@ Raw 2024 Philippine Statistics Authority (PSA) census population data, loaded in
 
 ### Run
 
-1. Import both notebooks into the workspace (or sync the repo through Databricks Repos / Git folders).
-2. Run the **extract notebook**. It POSTs a query selecting all geographic locations and all parameters from the PXWeb table, requests CSV, and writes the response unchanged to the volume path above. It prints the byte count, line count and CSV header.
-3. Run the **load notebook**. It reads the CSV, builds the full geographic path for each row, adds provenance columns and a row hash, creates the bronze table if it does not exist, and merges into it. It prints the batch ID, rows merged, merge keys and column list.
+1. Deploy the plain Python extractor and loader with the [bundle](../../operations/databricks-bundle.md); they are Python script tasks, not imported notebooks.
+2. Run the **extract task**. It POSTs a query selecting all geographic locations and all parameters from the PXWeb table, requests CSV, and writes the response unchanged to the volume path above. It prints the byte count, line count and CSV header.
+3. Run the **load task**. It reads the CSV, builds the full geographic path for each row, adds provenance columns and a row hash, creates the bronze table if it does not exist, and merges into it. It prints the batch ID, rows merged, merge keys and column list.
 4. Check the results against the expected values below.
 
 ### Configuration
 
-Settings are constants at the top of each notebook. Change them there if the team renames anything.
+The bundle supplies source endpoint, census year, volume root, and CSV encoding through explicit task configuration. Change deployment settings in `databricks.yml`; source column names, dataset grain, and hash coverage remain fixed by this dictionary.
 
 | Setting | Value | Notes |
 |---|---|---|
-| `API_URL` | `https://openstat.psa.gov.ph/PXWeb/api/v1/en/DB/1A/PO_2024/0241A6DPUP1.px` | Extract notebook |
-| `VOLUME_ROOT` | `/Volumes/ahon/reference/source` | Both notebooks |
+| `API_URL` | `https://openstat.psa.gov.ph/PXWeb/api/v1/en/DB/1A/PO_2024/0241A6DPUP1.px` | Extract task |
+| `VOLUME_ROOT` | `/Volumes/ahon/reference/source` | Both tasks |
 | `DATASET_NAME` | `psa_population` | One folder per dataset in the volume (team naming standard) |
-| `SOURCE_PATH` | `<VOLUME_ROOT>/<DATASET_NAME>/2024_population_urban.csv` | Load notebook |
-| `TABLE_NAME` | `ahon.bronze.psa_population_raw` | Load notebook |
+| `SOURCE_PATH` | `<VOLUME_ROOT>/<DATASET_NAME>/2024_population_urban.csv` | Load task |
+| `TABLE_NAME` | `ahon.bronze.psa_population_raw` | Load task |
 | `CENSUS_YEAR` | `2024` | Set by the job; not present in the file |
-| `MERGE_KEYS` | `geographic_location`, `census_year` | Load notebook |
+| `CSV_ENCODING` | `cp1252` | Bundle `psa_csv_encoding`; the verified PXWeb response declares `text/csv; charset=Windows-1252`. Raw landing bytes are preserved; decoding is strict. |
+| `MERGE_KEYS` | `geographic_location`, `census_year` | Load task |
+
+The extractor checks the response charset against configured encoding before replacing the landed file. A changed charset, missing/extra CSV headers, or malformed record is a blocking contract failure. No replacement-character decoding or row filtering is used. UTF-8 sources must be explicitly configured as such.
 
 ### Re-running and idempotency
 

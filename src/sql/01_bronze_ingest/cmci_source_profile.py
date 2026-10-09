@@ -1,8 +1,6 @@
 import os
 
 from bs4 import BeautifulSoup
-from pyspark.sql import functions as F
-
 from cmci_common import (
     CMCI_YEARS,
     EXPECTED_INDICATOR_COUNT,
@@ -12,6 +10,7 @@ from cmci_common import (
     SOURCE_REF,
     create_http_session,
 )
+from pyspark.sql import functions as F
 
 # ------------------------------------------------------------------
 # Configuration

@@ -11,7 +11,8 @@ from datetime import datetime, timezone
 
 def main() -> None:
     from delta.tables import DeltaTable
-    from pyspark.sql import SparkSession, functions as F
+    from pyspark.sql import SparkSession
+    from pyspark.sql import functions as F
 
     catalog = os.environ.get("AHON_CATALOG", "ahon")
     property_name = os.environ.get("AHON_BOUNDARY_CODE_PROPERTY", "psgc_code")
@@ -69,7 +70,6 @@ def main() -> None:
         "_batch_id",
         "_row_hash",
     )
-    silver.write.format("delta").mode("overwrite").saveAsTable(silver_table)
 
     expected = (
         spark.table(f"{catalog}.reference.lgu_master")
@@ -79,10 +79,10 @@ def main() -> None:
         .distinct()
     )
     invalid_codes = silver.filter(
-        F.col("psgc_code").isNull() | ~F.col("psgc_code").rlike("^[0-9]{10}$")
+        F.col("psgc_code").isNotNull() & ~F.col("psgc_code").rlike("^[0-9]{10}$")
     ).count()
     duplicate_codes = (
-        silver.groupBy("psgc_code").count().filter(F.col("count") > 1).count()
+        silver.filter(F.col("psgc_code").isNotNull()).groupBy("psgc_code").count().filter(F.col("count") > 1).count()
     )
     unknown_codes = silver.select("psgc_code").distinct().join(
         expected, "psgc_code", "left_anti"
@@ -122,6 +122,7 @@ def main() -> None:
     )
     checks = [
         ("boundary_code_format", invalid_codes, "BLOCKING"),
+        ("boundary_code_unmatched", silver.filter(F.col("psgc_code").isNull()).count(), "WARNING"),
         ("boundary_codes_unique", duplicate_codes, "BLOCKING"),
         ("boundary_code_active_city_municipality", unknown_codes, "WARNING"),
         ("boundary_geometry_valid", malformed_geometry, "BLOCKING"),
@@ -155,6 +156,8 @@ def main() -> None:
             f"malformed geometry={malformed_geometry}, non-polygons={non_polygon_geometry}, "
             f"out-of-bounds geometries={out_of_bounds_geometry}"
         )
+    # Validate the candidate before replacing the prior good Silver snapshot.
+    silver.write.format("delta").mode("overwrite").saveAsTable(silver_table)
     print(f"Loaded {row_count} approximate boundary features; {details}")
 
 

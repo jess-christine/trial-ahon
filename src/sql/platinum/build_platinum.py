@@ -15,7 +15,8 @@ def _write(frame, table_name: str) -> None:
 
 
 def main() -> None:
-    from pyspark.sql import SparkSession, Window, functions as F
+    from pyspark.sql import SparkSession, Window
+    from pyspark.sql import functions as F
 
     catalog = os.environ.get("AHON_CATALOG", "ahon")
 

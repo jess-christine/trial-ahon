@@ -1,11 +1,17 @@
-"""Execute a repository SQL file with the bundle-selected catalog."""
+"""Execute repository SQL or Python with explicit bundle configuration."""
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
+<<<<<<< Updated upstream
 import inspect
+=======
+import runpy
+import sys
+>>>>>>> Stashed changes
 from pathlib import Path
 
 
@@ -86,7 +92,7 @@ def resolve_sql_path(
     script_file: str | None,
     working_directory: str | None = None,
 ) -> Path:
-    """Resolve task SQL paths when Databricks does not define ``__file__``."""
+    """Resolve task paths when Databricks does not define ``__file__``."""
     path = Path(sql_file)
     if path.is_absolute():
         return path
@@ -103,16 +109,48 @@ def resolve_sql_path(
         if candidate.is_file():
             return candidate
     raise RuntimeError(
-        "Could not locate SQL file. Checked: "
+        "Could not locate task file. Checked: "
         + ", ".join(str(candidate) for candidate in candidates)
     )
 
 
+def parse_task_config(config_json: str) -> dict[str, str]:
+    """Accept non-secret AHON settings without relying on cluster env vars."""
+    config = json.loads(config_json)
+    if not isinstance(config, dict) or any(
+        not isinstance(key, str)
+        or not re.fullmatch(r"AHON_[A-Z0-9_]+", key)
+        or not isinstance(value, str)
+        for key, value in config.items()
+    ):
+        raise ValueError("Task config must contain AHON_ keys and string values")
+    return config
+
+
+def execute_python(path: Path) -> None:
+    # Each existing script keeps its own entry point and local sibling imports.
+    # Runner flags must not leak into a child's argparse parser.
+    original_argv = sys.argv
+    original_path = sys.path[:]
+    try:
+        sys.argv = [str(path)]
+        sys.path.insert(0, str(path.parent))
+        runpy.run_path(str(path), run_name="__main__")
+    finally:
+        sys.argv = original_argv
+        sys.path[:] = original_path
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sql-file", required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--sql-file")
+    source.add_argument("--python-file")
+    parser.add_argument("--config-json", default="{}")
     args = parser.parse_args()
+    os.environ.update(parse_task_config(args.config_json))
     catalog = os.environ.get("AHON_CATALOG", "ahon")
+<<<<<<< Updated upstream
     source_volume = os.environ.get(
         "AHON_SOURCE_VOLUME", f"/Volumes/{catalog}/reference/source"
     )
@@ -121,12 +159,29 @@ def main() -> None:
         sql_path = Path(inspect.currentframe().f_code.co_filename).resolve().parents[3] / sql_path
     sql_text = sql_path.read_text(encoding="utf-8")
     sql_text = render_sql(sql_text, catalog, source_volume)
+=======
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", catalog):
+        raise ValueError("AHON_CATALOG must be a simple SQL identifier")
+    path = resolve_sql_path(
+        args.sql_file or args.python_file,
+        os.environ.get("AHON_REPOSITORY_ROOT"),
+        globals().get("__file__") or globals().get("filename"),
+        os.getcwd(),
+    )
+    if args.python_file:
+        execute_python(path)
+        return
+    source_volume = os.environ.get(
+        "AHON_SOURCE_VOLUME", f"/Volumes/{catalog}/reference/source"
+    )
+    sql_text = render_sql(path.read_text(encoding="utf-8"), catalog, source_volume)
+>>>>>>> Stashed changes
 
     from pyspark.sql import SparkSession
 
     spark = SparkSession.builder.getOrCreate()
     for index, statement in enumerate(split_statements(sql_text), start=1):
-        print(f"Running {sql_path.name} statement {index}")
+        print(f"Running {path.name} statement {index}")
         spark.sql(statement)
 
 

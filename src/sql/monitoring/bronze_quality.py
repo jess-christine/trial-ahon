@@ -160,8 +160,8 @@ def schema_drift(
 
 def main() -> None:
     """Aggregate each table once and append per-rule outcomes to monitoring."""
+    from pyspark.sql import SparkSession
     from pyspark.sql import functions as F
-    from pyspark.sql.utils import AnalysisException
     from pyspark.sql.types import (
         LongType,
         StringType,
@@ -169,7 +169,7 @@ def main() -> None:
         StructType,
         TimestampType,
     )
-    from pyspark.sql import SparkSession
+    from pyspark.sql.utils import AnalysisException
 
     spark = SparkSession.builder.getOrCreate()
     spark.conf.set("spark.sql.session.timeZone", "UTC")

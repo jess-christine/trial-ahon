@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 from delta.tables import DeltaTable
-from pyspark.sql import SparkSession, functions as F
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
 CMCI_CODE_DIR = Path(__file__).resolve().parents[1] / "01_bronze_ingest"
 sys.path.insert(0, str(CMCI_CODE_DIR))
 
-from cmci_common import INDICATORS_BY_PILLAR  # noqa: E402
+from cmci_common import INDICATORS_BY_PILLAR
 
 CATALOG = os.environ.get("AHON_CATALOG", "ahon")
 BRONZE_TABLE = f"{CATALOG}.bronze.cmci_raw_indicator"

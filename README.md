@@ -88,4 +88,4 @@ CATALOG                    # ahon (production) or ahon_dev (development), with t
 
 ## Databricks execution
 
-Validate and deploy the [Databricks Asset Bundle](docs/operations/databricks-bundle.md) from the repository root. The manual `ahon_ingestion` job runs setup, source ingestion, boundary loading, and Bronze validation. The manual `ahon_medallion` job invokes ingestion, then runs Silver, Gold, Silver/Gold validation, and experimental Platinum. Workspace-specific node type, PSGC secret identifiers, reviewed CMCI mapping, landed source files, and the approved approximate boundary GeoJSON are required before a complete run.
+Validate and deploy the [Databricks Asset Bundle](docs/operations/databricks-bundle.md) from the repository root. The manual `ahon_ingestion` job runs setup, source ingestion, boundary loading, and Bronze validation. The manual `ahon_medallion` job invokes ingestion, then runs Silver, Gold, Silver/Gold validation, and experimental Platinum. Serverless environment configuration, PSGC secret identifiers, reviewed CMCI mapping, landed source files, and the approved approximate boundary GeoJSON are required before a complete run.

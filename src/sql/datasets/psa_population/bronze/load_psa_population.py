@@ -1,4 +1,3 @@
-# Databricks notebook source
 """Load the PSA census population CSV into the bronze Delta table."""
 
 from __future__ import annotations
@@ -20,6 +19,7 @@ CATALOG = os.environ.get("AHON_CATALOG", "ahon")
 VOLUME_ROOT = Path(os.environ.get("AHON_SOURCE_VOLUME", f"/Volumes/{CATALOG}/reference/source"))
 DATASET_NAME = "psa_population"
 CENSUS_YEAR = os.environ["AHON_PSA_CENSUS_YEAR"]
+CSV_ENCODING = os.environ["AHON_PSA_CSV_ENCODING"]
 SOURCE_PATH = VOLUME_ROOT / DATASET_NAME / f"{CENSUS_YEAR}_population_urban.csv"
 TABLE_NAME = f"{CATALOG}.bronze.psa_population_raw"
 MERGE_KEYS = ["geographic_location", "census_year"]
@@ -58,7 +58,7 @@ CREATE_TABLE_SQL = f"""
 
 
 def read_source_rows(
-    path: Path, census_year: str
+    path: Path, census_year: str, encoding: str
 ) -> list[tuple[str, str, str, str, str]]:
     """Read the extract CSV and build full hierarchical geographic paths.
 
@@ -68,8 +68,14 @@ def read_source_rows(
     """
     rows: list[tuple[str, str, str, str, str]] = []
     parents: list[tuple[int, str]] = []
-    with path.open(encoding="utf-8-sig", newline="") as f:
-        for row in csv.DictReader(f):
+    with path.open(encoding=encoding, newline="") as f:
+        reader = csv.DictReader(f)
+        required = {"Geographic Location", "Total Population", "Urban Population", "Percent Urban"}
+        if set(reader.fieldnames or []) != required or len(reader.fieldnames or []) != len(required):
+            raise ValueError(f"PSA CSV schema changed: expected {sorted(required)}, got {reader.fieldnames}")
+        for row in reader:
+            if None in row or row.get("Geographic Location") is None:
+                raise ValueError(f"Malformed PSA CSV record at line {reader.line_num}")
             loc = row["Geographic Location"]
             name = loc.lstrip(".")
             level = (len(loc) - len(name)) // 2
@@ -109,7 +115,7 @@ def merge_into_bronze(spark: SparkSession, df: DataFrame) -> None:
         DeltaTable.forName(spark, TABLE_NAME)
         .alias("target")
         .merge(df.alias("source"), condition)
-        .whenMatchedUpdateAll()
+        .whenMatchedUpdateAll(condition="NOT (target._row_hash <=> source._row_hash)")
         .whenNotMatchedInsertAll()
         .execute()
     )
@@ -119,7 +125,7 @@ def main() -> None:
     """Read the extracted CSV, add provenance, and merge into bronze."""
     spark = SparkSession.builder.getOrCreate()
 
-    rows = read_source_rows(SOURCE_PATH, CENSUS_YEAR)
+    rows = read_source_rows(SOURCE_PATH, CENSUS_YEAR, CSV_ENCODING)
     batch_id = str(uuid.uuid4())
     df = add_provenance(spark.createDataFrame(rows, SCHEMA), batch_id)
     merge_into_bronze(spark, df)
