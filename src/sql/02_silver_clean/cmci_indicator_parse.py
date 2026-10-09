@@ -72,7 +72,7 @@ def build_pillar_frame(latest_rows, indicators: dict[str, str]):
 def merge_pillar(spark: SparkSession, table_name: str, frame) -> None:
     """Create a pillar table or merge on its documented PSGC-year grain."""
     if not spark.catalog.tableExists(table_name):
-        frame.write.format("delta").mode("errorifexists").saveAsTable(table_name)
+        frame.write.format("delta").mode("error").saveAsTable(table_name)
         return
 
     existing_columns = set(spark.table(table_name).columns)

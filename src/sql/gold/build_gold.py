@@ -408,7 +408,7 @@ def build_fact_earthquake_event(spark: SparkSession) -> None:
     from pyspark.sql import functions as F
     from pyspark.sql.types import DecimalType, LongType
 
-    source = spark.table(PHIVOLCS_SILVER)
+    source = spark.table(PHIVOLCS_SILVER).dropDuplicates(["id"])
     boundary = (
         spark.table(
             _table("ahon.silver.geoportal_city_municipality_boundary_clean")
@@ -420,8 +420,8 @@ def build_fact_earthquake_event(spark: SparkSession) -> None:
             "psgc_code",
             "inner",
         )
-        .select("psgc_code", "boundary_geojson")
-        .withColumn("_boundary_geom", F.expr("try_to_geometry(boundary_geojson)"))
+        .select("psgc_code", "boundary_wkb_hex")
+        .withColumn("_boundary_geom", F.expr("try_to_geometry(unhex(boundary_wkb_hex))"))
         .withColumn("_xmin", F.expr("st_xmin(_boundary_geom)"))
         .withColumn("_xmax", F.expr("st_xmax(_boundary_geom)"))
         .withColumn("_ymin", F.expr("st_ymin(_boundary_geom)"))
@@ -444,6 +444,7 @@ def build_fact_earthquake_event(spark: SparkSession) -> None:
             & (F.col("latitude") <= F.col("_ymax"))
         )
         .filter(F.expr("st_covers(_boundary_geom, _event_geom)"))
+        .select("id", "psgc_code")
         .groupBy("id")
         .agg(
             F.countDistinct("psgc_code").alias("match_count"),

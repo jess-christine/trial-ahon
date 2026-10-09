@@ -51,23 +51,48 @@ USING (
             *
         FROM invalid
         WHERE is_invalid = 0
+    ),
+    hashed AS (
+        SELECT
+            xxhash64(event_time, latitude, longitude, depth, magnitude) AS id,
+            event_time,
+            latitude,
+            longitude,
+            depth,
+            magnitude,
+            location_description,
+            extract(MONTH FROM event_time) AS month,
+            extract(YEAR FROM event_time) AS year,
+            _source_name,
+            _source_ref,
+            _ingested_at,
+            _batch_id,
+            _row_hash
+        FROM valid
+    ),
+    deduped AS (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY id ORDER BY _ingested_at DESC) AS rn
+        FROM hashed
     )
     SELECT
-        xxhash64(event_time, latitude, longitude, depth, magnitude) AS id,
+        id,
         event_time,
         latitude,
         longitude,
         depth,
         magnitude,
         location_description,
-        extract(MONTH FROM event_time) AS month,
-        extract(YEAR FROM event_time) AS year,
+        month,
+        year,
         _source_name,
         _source_ref,
         _ingested_at,
         _batch_id,
         _row_hash
-    FROM valid
+    FROM deduped
+    WHERE rn = 1
 ) AS source
 ON target.id = source.id
 WHEN MATCHED THEN UPDATE SET *

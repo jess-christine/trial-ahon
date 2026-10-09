@@ -58,7 +58,7 @@ def main() -> None:
     boundary = spark.table(
         table("silver", "geoportal_city_municipality_boundary_clean")
     ).select(
-        "psgc_code", "boundary_geojson"
+        "psgc_code", "boundary_wkb_hex"
     ).join(lgu, "psgc_code", "inner")
     events = spark.table(table("gold", "fact_earthquake_event")).filter(
         F.col("timestamp").isNotNull()
@@ -77,8 +77,8 @@ def main() -> None:
     event_points = events.withColumn("_event_geojson", event_json)
     boundary_centroids = boundary.withColumn(
         "_centroid_geojson",
-        F.expr("st_asgeojson(st_centroid(try_to_geometry(boundary_geojson)))"),
-    ).withColumn("_boundary_geom", F.expr("try_to_geometry(boundary_geojson)"))
+        F.expr("st_asgeojson(st_centroid(try_to_geometry(unhex(boundary_wkb_hex))))"),
+    ).withColumn("_boundary_geom", F.expr("try_to_geometry(unhex(boundary_wkb_hex))"))
     for coordinate, function_name in (
         ("_xmin", "st_xmin"),
         ("_xmax", "st_xmax"),
