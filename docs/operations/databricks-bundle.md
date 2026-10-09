@@ -2,7 +2,7 @@
 
 ## Scope and run order
 
-The `ahon_end_to_end` job in `resources/ahon_pipeline.yml` runs setup, reference load, source extraction/Bronze, Bronze DQ, Silver transforms, boundary load, Gold build, Silver/Gold DQ, and experimental Platinum in dependency order. The job has one shared small job cluster, one concurrent run, and one retry. It is manual; no schedule was added.
+The bundle defines two manual jobs in `resources/ahon_pipeline.yml`. `ahon_ingestion` runs catalog/schema setup, reference loading, source extraction and Bronze loads, boundary loading, then Bronze DQ. `ahon_medallion` starts with a Databricks `run_job_task` that runs `ahon_ingestion` and waits for it to succeed, then runs Silver transforms, Gold, Silver/Gold DQ, and experimental Platinum. Run `ahon_ingestion` alone to refresh and validate source data; run `ahon_medallion` for the full end-to-end pipeline. Each job uses its own small job cluster, permits one concurrent run, and remains unscheduled.
 
 ## Configure and deploy
 
@@ -11,7 +11,8 @@ Use the Databricks CLI version supported by the workspace. Authenticate with an 
 ```powershell
 databricks bundle validate -t dev
 databricks bundle deploy -t dev
-databricks bundle run -t dev ahon_end_to_end
+databricks bundle run -t dev ahon_ingestion
+databricks bundle run -t dev ahon_medallion
 ```
 
 Use `-t prod` only after the development output and mappings are reviewed. The bundle does not include source files or credentials. Configure `node_type_id`, `psgc_secret_scope`, `psgc_secret_key`, and `boundary_code_property` for the workspace. Catalog and volume paths, source endpoints, PSA census year, PSGC periods, CMCI reporting years, and the PHIVOLCS lookback are bundle variables. The job uses DBR 17.1+ because native geospatial SQL functions are required.
@@ -28,7 +29,7 @@ The boundary inventory currently reports that downloads are temporarily unavaila
 
 ## Configuration and reliability
 
-`AHON_CATALOG`, `AHON_SOURCE_VOLUME`, source endpoints, the PSA census year, CMCI reporting years, and PHIVOLCS lookback come from bundle variables. `AHON_BOUNDARY_GEOJSON_PATH` and `AHON_BOUNDARY_CODE_PROPERTY` are job-cluster environment variables. PSGC credentials are resolved from a Databricks secret by scope/key identifiers; secret values are not placed in YAML. SQL scripts run through `src/sql/common/run_sql_file.py`, which validates catalog identifiers, substitutes the configured catalog and source-volume root, and splits statements outside quoted strings/comments. CMCI ingestion and its source profiler share one configured year list.
+`AHON_CATALOG`, `AHON_SOURCE_VOLUME`, source endpoints, the PSA census year, CMCI reporting years, and PHIVOLCS lookback come from bundle variables. `AHON_REPOSITORY_ROOT` points to the bundle's file path where files are synchronized. SQL task path resolution also uses the workspace task filename or current working directory when Databricks does not define Python's `__file__`, including source-linked deployments. `AHON_BOUNDARY_GEOJSON_PATH` and `AHON_BOUNDARY_CODE_PROPERTY` are job-cluster environment variables. PSGC credentials are resolved from a Databricks secret by scope/key identifiers; secret values are not placed in YAML. SQL scripts run through `src/sql/common/run_sql_file.py`, which validates catalog identifiers, substitutes the configured catalog in qualified names and catalog setup statements, substitutes the source-volume root, and splits statements outside quoted strings/comments. CMCI ingestion and its source profiler share one configured year list.
 
 Bronze boundary ingestion merges on source reference and feature hash, retaining previous source versions while making identical reruns idempotent. Silver, Gold, and Platinum are deterministic snapshots; DQ results append run-scoped outcomes. Source extract tasks may call external endpoints and therefore rely on the repo's existing source-specific retries/validation. A failed upstream task prevents dependent layers from running.
 

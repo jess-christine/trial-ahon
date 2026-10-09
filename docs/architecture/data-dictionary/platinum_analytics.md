@@ -3,7 +3,7 @@
 - **Purpose:** answer the project risk, preparedness-gap, vulnerability, and priority questions at city/municipality level.
 - **Source and lineage:** Gold `dim_lgu`, `fact_population`, `fact_earthquake_event`, `fact_cmci_indicator`, `dim_cmci_indicator`, and `fact_ldrrmf`; event LGU assignment uses Silver `geoportal_city_municipality_boundary_clean` through Gold match fields.
 - **Built by:** `src/sql/platinum/build_platinum.py` after `src/sql/gold/build_gold.py` and Silver/Gold validation.
-- **Run:** Databricks Asset Bundle job `ahon_end_to_end`; see [bundle operations](../../operations/databricks-bundle.md).
+- **Run:** Databricks Asset Bundle job `ahon_medallion` (which invokes `ahon_ingestion`); see [bundle operations](../../operations/databricks-bundle.md).
 - **Audit:** each output row has `run_id` and `calculated_at`; coverage, output-grain uniqueness, current-run IDs, and allowed non-null category values are recorded in `ahon.monitoring.dq_result` before snapshot replacement.
 
 The owner approved the following assumptions for experimental v1. They are not calibrated operational thresholds:

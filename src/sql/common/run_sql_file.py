@@ -69,8 +69,42 @@ def render_sql(sql_text: str, catalog: str, source_volume: str) -> str:
     """Apply bundle-selected catalog and source-volume settings to SQL."""
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", catalog):
         raise ValueError("AHON_CATALOG must be a simple SQL identifier")
-    return re.sub(r"\bahon\.", f"{catalog}.", sql_text).replace(
+    rendered = re.sub(r"\bahon\.", f"{catalog}.", sql_text)
+    rendered = re.sub(
+        r"(?i)(\b(?:CREATE\s+CATALOG\s+IF\s+NOT\s+EXISTS|SHOW\s+SCHEMAS\s+IN)\s+)ahon\b",
+        rf"\g<1>{catalog}",
+        rendered,
+    )
+    return rendered.replace(
         "/Volumes/ahon/reference/source", source_volume.rstrip("/")
+    )
+
+
+def resolve_sql_path(
+    sql_file: str,
+    repository_root: str | None,
+    script_file: str | None,
+    working_directory: str | None = None,
+) -> Path:
+    """Resolve task SQL paths when Databricks does not define ``__file__``."""
+    path = Path(sql_file)
+    if path.is_absolute():
+        return path
+    candidates: list[Path] = []
+    if repository_root:
+        candidates.append(Path(repository_root) / path)
+    if script_file:
+        candidates.extend(
+            parent / path for parent in Path(script_file).resolve().parents
+        )
+    if working_directory:
+        candidates.append(Path(working_directory) / path)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    raise RuntimeError(
+        "Could not locate SQL file. Checked: "
+        + ", ".join(str(candidate) for candidate in candidates)
     )
 
 

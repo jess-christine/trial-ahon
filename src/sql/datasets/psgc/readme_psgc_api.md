@@ -45,7 +45,7 @@ Rows are matched on `_row_hash`, so re-running the notebook with unchanged data 
 ## Usage
 
 1. Configure `psgc_secret_scope` and `psgc_secret_key` for the job using an existing Databricks secret.
-2. Run the PSGC task from the `ahon_end_to_end` bundle job.
+2. Run the PSGC task from the `ahon_ingestion` bundle job.
 3. Check the printed row count, batch ID, and merge metrics.
 
 ## Notes
