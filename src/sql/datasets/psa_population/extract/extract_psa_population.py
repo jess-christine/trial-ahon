@@ -11,15 +11,14 @@ import requests
 
 # COMMAND ----------
 
-# PXWeb API endpoint for the 2024 census table:
-# Total Population, Urban Population, and Percent Urban by geographic location
-API_URL = "https://openstat.psa.gov.ph/PXWeb/api/v1/en/DB/1A/PO_2024/0241A6DPUP1.px"
+API_URL = os.environ["AHON_PSA_API_URL"]
+CENSUS_YEAR = os.environ["AHON_PSA_CENSUS_YEAR"]
 
 # Destination: the source volume, one folder per dataset (naming standard)
 CATALOG = os.environ.get("AHON_CATALOG", "ahon")
 VOLUME_ROOT = Path(os.environ.get("AHON_SOURCE_VOLUME", f"/Volumes/{CATALOG}/reference/source"))
 DATASET_NAME = "psa_population"
-TARGET_PATH = VOLUME_ROOT / DATASET_NAME / "2024_population_urban.csv"
+TARGET_PATH = VOLUME_ROOT / DATASET_NAME / f"{CENSUS_YEAR}_population_urban.csv"
 
 REQUEST_TIMEOUT_SECONDS = 60
 

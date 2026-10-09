@@ -19,9 +19,9 @@ from pyspark.sql.types import StringType, StructField, StructType
 CATALOG = os.environ.get("AHON_CATALOG", "ahon")
 VOLUME_ROOT = Path(os.environ.get("AHON_SOURCE_VOLUME", f"/Volumes/{CATALOG}/reference/source"))
 DATASET_NAME = "psa_population"
-SOURCE_PATH = VOLUME_ROOT / DATASET_NAME / "2024_population_urban.csv"
+CENSUS_YEAR = os.environ["AHON_PSA_CENSUS_YEAR"]
+SOURCE_PATH = VOLUME_ROOT / DATASET_NAME / f"{CENSUS_YEAR}_population_urban.csv"
 TABLE_NAME = f"{CATALOG}.bronze.psa_population_raw"
-CENSUS_YEAR = "2024"
 MERGE_KEYS = ["geographic_location", "census_year"]
 RAW_COLS = [
     "geographic_location",

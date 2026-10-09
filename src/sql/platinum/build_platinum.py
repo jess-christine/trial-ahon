@@ -30,8 +30,17 @@ def main() -> None:
         F.col("geographic_level").isin("City", "Municipality", "City/Municipality")
     ).select("psgc_code")
     population = spark.table(table("gold", "fact_population")).filter(
-        F.col("psgc_code").isNotNull() & F.col("total_population").isNotNull()
+        F.col("psgc_code").isNotNull()
     )
+    if (
+        population.groupBy("psgc_code", "year")
+        .count()
+        .filter(F.col("count") > 1)
+        .limit(1)
+        .count()
+    ):
+        raise RuntimeError("Matched population must be unique per LGU and census year")
+    population = population.filter(F.col("total_population").isNotNull())
     latest_population_year = population.agg(F.max("year").alias("year")).first()["year"]
     if latest_population_year is None:
         raise RuntimeError("No matched city/municipality population rows are available")
@@ -155,8 +164,6 @@ def main() -> None:
         .withColumn("run_id", F.lit(run_id))
         .withColumn("calculated_at", F.lit(calculated_at).cast("timestamp"))
     )
-    _write(risk, table("platinum", "risk_level_by_lgu"))
-
     cmci = spark.table(table("gold", "fact_cmci_indicator")).filter(
         F.col("raw_score").isNotNull()
     )
@@ -181,12 +188,24 @@ def main() -> None:
     )
 
     budget = spark.table(table("gold", "fact_ldrrmf")).filter(
-        (F.col("psgc_code").isNotNull()) & F.col("utilization_rate").isNotNull()
+        F.col("psgc_code").isNotNull()
     )
+    budget = budget.groupBy("psgc_code", "fiscal_year").agg(
+        F.sum("total_appropriation").alias("total_appropriation"),
+        F.sum("total_expenditure").alias("total_expenditure"),
+    ).withColumn(
+        "ldrrmf_utilization_score",
+        F.when(
+            F.col("total_appropriation") != 0,
+            F.col("total_expenditure") / F.col("total_appropriation") * 100,
+        ).cast("decimal(7,2)"),
+    ).filter(F.col("ldrrmf_utilization_score").isNotNull())
     latest_fiscal = budget.groupBy("psgc_code").agg(F.max("fiscal_year").alias("fiscal_year"))
-    budget = budget.join(latest_fiscal, ["psgc_code", "fiscal_year"], "inner").groupBy(
-        "psgc_code", "fiscal_year"
-    ).agg(F.avg("utilization_rate").alias("ldrrmf_utilization_score"))
+    budget = budget.join(latest_fiscal, ["psgc_code", "fiscal_year"], "inner").select(
+        "psgc_code",
+        "fiscal_year",
+        "ldrrmf_utilization_score",
+    )
     preparedness = (
         risk.select("psgc_code", "risk_score", "risk_tertile")
         .join(cmci_capacity, "psgc_code", "left")
@@ -217,8 +236,6 @@ def main() -> None:
     ).withColumn("run_id", F.lit(run_id)).withColumn(
         "calculated_at", F.lit(calculated_at).cast("timestamp")
     )
-    _write(preparedness, table("platinum", "preparedness_gap_by_lgu"))
-
     vulnerability = preparedness.withColumn(
         "priority_category",
         F.when((F.col("risk_tertile") == 3) & (F.col("preparedness_tertile") == 1), "Highest priority")
@@ -226,8 +243,6 @@ def main() -> None:
         .when((F.col("risk_tertile") < 3) & (F.col("preparedness_tertile") == 1), "Capacity concern")
         .when(F.col("risk_tertile").isNotNull() & F.col("preparedness_tertile").isNotNull(), "Lower priority"),
     )
-    _write(vulnerability, table("platinum", "vulnerability_priority_by_lgu"))
-
     priority_lgus = vulnerability.filter(F.col("priority_category") == "Highest priority").select("psgc_code")
     priority_indicators = latest_cmci.join(priority_lgus, "psgc_code", "inner").groupBy(
         "year", "indicator_code"
@@ -244,8 +259,6 @@ def main() -> None:
     ).withColumn("run_id", F.lit(run_id)).withColumn(
         "calculated_at", F.lit(calculated_at).cast("timestamp")
     )
-    _write(priority_indicators, table("platinum", "cmci_preparedness_priority_by_indicator"))
-
     counts = {
         "active_lgus": lgu.count(),
         "population_scores": population_score.count(),
@@ -265,7 +278,160 @@ def main() -> None:
             severity, "WARN" if failed_count else "PASS", counts["active_lgus"], max(failed_count, 0),
             json.dumps(counts, sort_keys=True)))
     schema = "run_id STRING, checked_at TIMESTAMP, dataset_name STRING, table_name STRING, rule_name STRING, severity STRING, status STRING, row_count LONG, failed_count LONG, details STRING"
+    output_specs = (
+        ("risk_level_by_lgu", risk, ("psgc_code",), "risk_level", ("Low", "Medium", "High")),
+        ("preparedness_gap_by_lgu", preparedness, ("psgc_code",), None, ()),
+        ("vulnerability_priority_by_lgu", vulnerability, ("psgc_code",), "priority_category", ("Highest priority", "Monitor", "Capacity concern", "Lower priority")),
+        ("cmci_preparedness_priority_by_indicator", priority_indicators, ("cmci_year", "indicator_code"), None, ()),
+    )
+    validation_failures = []
+    for output_name, frame, key_columns, category_column, allowed_categories in output_specs:
+        target = table("platinum", output_name)
+        row_count = frame.count()
+        duplicate_groups = (
+            frame.groupBy(*key_columns)
+            .count()
+            .filter(F.col("count") > 1)
+            .count()
+        )
+        wrong_run_count = frame.filter(
+            F.col("run_id").isNull() | (F.col("run_id") != run_id)
+        ).count()
+        for rule, failed_count, details in (
+            ("unique_output_grain", duplicate_groups, {"key_columns": key_columns}),
+            ("current_run_id", wrong_run_count, {"expected_run_id": run_id}),
+        ):
+            status = "FAIL" if failed_count else "PASS"
+            if failed_count:
+                validation_failures.append(f"{target}:{rule}")
+            results.append((run_id, checked_at, "platinum", target, rule, "BLOCKING", status,
+                row_count, failed_count, json.dumps(details, sort_keys=True)))
+        if category_column:
+            invalid_categories = frame.filter(
+                F.col(category_column).isNotNull()
+                & ~F.col(category_column).isin(*allowed_categories)
+            ).count()
+            status = "FAIL" if invalid_categories else "PASS"
+            if invalid_categories:
+                validation_failures.append(f"{target}:{category_column}_allowed_values")
+            results.append((run_id, checked_at, "platinum", target,
+                f"{category_column}_allowed_values", "BLOCKING", status, row_count,
+                invalid_categories, json.dumps({"allowed": allowed_categories}, sort_keys=True)))
+        metric_error = None
+        if output_name == "risk_level_by_lgu":
+            scores_missing = F.col("population_exposure_score").isNull() | F.col(
+                "earthquake_activity_score"
+            ).isNull()
+            metric_error = (
+                F.col("risk_score").isNull() != scores_missing
+            ) | (
+                ~scores_missing
+                & (
+                    F.abs(
+                        F.col("risk_score")
+                        - F.col("population_exposure_score")
+                        * F.col("earthquake_activity_score")
+                    )
+                    > F.lit(0.01)
+                )
+            )
+            expected_risk_level = (
+                F.when(F.col("risk_tertile") == 3, "High")
+                .when(F.col("risk_tertile") == 2, "Medium")
+                .when(F.col("risk_tertile") == 1, "Low")
+            )
+            metric_error = metric_error | (
+                F.col("risk_level").isNull() != expected_risk_level.isNull()
+            ) | (
+                F.col("risk_level").isNotNull()
+                & (F.col("risk_level") != expected_risk_level)
+            )
+        elif output_name in ("preparedness_gap_by_lgu", "vulnerability_priority_by_lgu"):
+            inputs_missing = F.col("cmci_capacity_score").isNull() | F.col(
+                "ldrrmf_utilization_score"
+            ).isNull()
+            missing_gap_input = inputs_missing | F.col("risk_score").isNull()
+            metric_error = (
+                F.col("preparedness_score").isNull() != inputs_missing
+            ) | (
+                ~inputs_missing
+                & (
+                    F.abs(
+                        F.col("preparedness_score")
+                        - F.col("cmci_capacity_score")
+                        - F.col("ldrrmf_utilization_score")
+                    )
+                    > F.lit(0.01)
+                )
+            ) | (F.col("preparedness_gap").isNull() != missing_gap_input) | (
+                ~missing_gap_input
+                & (
+                    F.abs(
+                        F.col("preparedness_gap")
+                        - F.col("preparedness_score")
+                        + F.col("risk_score")
+                    )
+                    > F.lit(0.01)
+                )
+            )
+            if output_name == "vulnerability_priority_by_lgu":
+                category_missing = F.col("priority_category").isNull()
+                tertile_missing = F.col("risk_tertile").isNull() | F.col(
+                    "preparedness_tertile"
+                ).isNull()
+                metric_error = metric_error | (
+                    category_missing != tertile_missing
+                )
+                expected_category = (
+                    F.when(
+                        (F.col("risk_tertile") == 3)
+                        & (F.col("preparedness_tertile") == 1),
+                        "Highest priority",
+                    )
+                    .when(
+                        (F.col("risk_tertile") == 3)
+                        & (F.col("preparedness_tertile") > 1),
+                        "Monitor",
+                    )
+                    .when(
+                        (F.col("risk_tertile") < 3)
+                        & (F.col("preparedness_tertile") == 1),
+                        "Capacity concern",
+                    )
+                    .when(
+                        F.col("risk_tertile").isNotNull()
+                        & F.col("preparedness_tertile").isNotNull(),
+                        "Lower priority",
+                    )
+                )
+                metric_error = metric_error | (
+                    F.col("priority_category").isNotNull()
+                    & (F.col("priority_category") != expected_category)
+                )
+        elif output_name == "cmci_preparedness_priority_by_indicator":
+            metric_error = (
+                F.col("mean_indicator_percentile").isNull()
+                | (F.col("mean_indicator_percentile") < 0)
+                | (F.col("mean_indicator_percentile") > 100)
+                | F.col("priority_lgu_count").isNull()
+                | (F.col("priority_lgu_count") <= 0)
+            )
+        if metric_error is not None:
+            invalid_metrics = frame.filter(metric_error).count()
+            status = "FAIL" if invalid_metrics else "PASS"
+            if invalid_metrics:
+                validation_failures.append(f"{target}:metric_consistency")
+            results.append((run_id, checked_at, "platinum", target,
+                "metric_formula_null_and_range_consistency", "BLOCKING", status,
+                row_count, invalid_metrics, "{}"))
     spark.createDataFrame(results, schema).write.mode("append").saveAsTable(table("monitoring", "dq_result"))
+    if validation_failures:
+        raise RuntimeError("Blocking Platinum output quality failures: " + ", ".join(validation_failures))
+    # Delay replacement until every output transform and its coverage actions succeed.
+    _write(risk, table("platinum", "risk_level_by_lgu"))
+    _write(preparedness, table("platinum", "preparedness_gap_by_lgu"))
+    _write(vulnerability, table("platinum", "vulnerability_priority_by_lgu"))
+    _write(priority_indicators, table("platinum", "cmci_preparedness_priority_by_indicator"))
     print(f"Experimental Platinum v1 complete: {json.dumps(counts, sort_keys=True)}")
 
 

@@ -398,6 +398,37 @@ def main() -> None:
             )
         )
 
+    def record_unique_grain(
+        dataset: str, table: str, key_columns: tuple[str, ...]
+    ) -> None:
+        duplicate_groups = (
+            spark.table(table)
+            .groupBy(*key_columns)
+            .count()
+            .filter(F.col("count") > 1)
+            .count()
+        )
+        status = result_status(duplicate_groups, "BLOCKING")
+        if status == "FAIL":
+            blocking.append(f"{table}:{'_'.join(key_columns)}_unique_grain")
+        results.append(
+            (
+                run_id,
+                checked_at,
+                dataset,
+                table,
+                "unique_" + "_".join(key_columns),
+                "BLOCKING",
+                status,
+                row_counts.get(table, 0),
+                duplicate_groups,
+                json.dumps(
+                    {"layer": "gold", "grain_columns": key_columns},
+                    sort_keys=True,
+                ),
+            )
+        )
+
     # Exact source/target reconciliations are used only where the Silver job
     # promises a snapshot or a defined key-level merge.
     if table_name("ahon.silver.blgf_ldrrmf_annual_lgu_clean") in row_counts:
@@ -597,6 +628,11 @@ def main() -> None:
         }
         excluded_population_count = sum(excluded_levels.values())
         results.append((run_id, checked_at, "psa_population", table_name("ahon.gold.fact_population"), "non_city_municipality_rows_excluded_by_scope", "WARNING", result_status(excluded_population_count, "WARNING"), row_counts[table_name("ahon.gold.fact_population")], excluded_population_count, json.dumps({"layer": "gold", "excluded_source_geographic_levels": excluded_levels, "rows_remain_in": table_name("ahon.silver.psa_population_clean")}, sort_keys=True)))
+        record_unique_grain(
+            "psa_population",
+            table_name("ahon.gold.fact_population"),
+            ("geographic_location", "year"),
+        )
     if table_name("ahon.gold.fact_ldrrmf") in row_counts:
         silver_ldrrmf = spark.table(BLGF_SILVER)
         expected = silver_ldrrmf.filter(

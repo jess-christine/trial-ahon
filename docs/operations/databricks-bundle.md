@@ -14,7 +14,7 @@ databricks bundle deploy -t dev
 databricks bundle run -t dev ahon_end_to_end
 ```
 
-Use `-t prod` only after the development output and mappings are reviewed. The bundle does not include source files or credentials. Configure `node_type_id`, `psgc_secret_scope`, `psgc_secret_key`, and `boundary_code_property` for the workspace. The `catalog`, `source_volume_path`, and boundary file path have target-specific defaults; change them through bundle variables for workspace-specific storage. The job uses DBR 17.1+ because native geospatial SQL functions are required.
+Use `-t prod` only after the development output and mappings are reviewed. The bundle does not include source files or credentials. Configure `node_type_id`, `psgc_secret_scope`, `psgc_secret_key`, and `boundary_code_property` for the workspace. Catalog and volume paths, source endpoints, PSA census year, PSGC periods, CMCI reporting years, and the PHIVOLCS lookback are bundle variables. The job uses DBR 17.1+ because native geospatial SQL functions are required.
 
 Before running, ensure:
 
@@ -28,7 +28,7 @@ The boundary inventory currently reports that downloads are temporarily unavaila
 
 ## Configuration and reliability
 
-`AHON_CATALOG` and `AHON_SOURCE_VOLUME` come from bundle variables. `AHON_BOUNDARY_GEOJSON_PATH` and `AHON_BOUNDARY_CODE_PROPERTY` are job-cluster environment variables. PSGC credentials are resolved from a Databricks secret by scope/key identifiers; secret values are not placed in YAML. SQL scripts run through `src/sql/common/run_sql_file.py`, which validates catalog identifiers, substitutes the configured catalog, and splits statements outside quoted strings/comments.
+`AHON_CATALOG`, `AHON_SOURCE_VOLUME`, source endpoints, the PSA census year, CMCI reporting years, and PHIVOLCS lookback come from bundle variables. `AHON_BOUNDARY_GEOJSON_PATH` and `AHON_BOUNDARY_CODE_PROPERTY` are job-cluster environment variables. PSGC credentials are resolved from a Databricks secret by scope/key identifiers; secret values are not placed in YAML. SQL scripts run through `src/sql/common/run_sql_file.py`, which validates catalog identifiers, substitutes the configured catalog and source-volume root, and splits statements outside quoted strings/comments. CMCI ingestion and its source profiler share one configured year list.
 
 Bronze boundary ingestion merges on source reference and feature hash, retaining previous source versions while making identical reruns idempotent. Silver, Gold, and Platinum are deterministic snapshots; DQ results append run-scoped outcomes. Source extract tasks may call external endpoints and therefore rely on the repo's existing source-specific retries/validation. A failed upstream task prevents dependent layers from running.
 

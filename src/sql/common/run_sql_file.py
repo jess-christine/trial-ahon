@@ -64,19 +64,28 @@ def split_statements(sql_text: str) -> list[str]:
     return statements
 
 
+def render_sql(sql_text: str, catalog: str, source_volume: str) -> str:
+    """Apply bundle-selected catalog and source-volume settings to SQL."""
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", catalog):
+        raise ValueError("AHON_CATALOG must be a simple SQL identifier")
+    return re.sub(r"\bahon\.", f"{catalog}.", sql_text).replace(
+        "/Volumes/ahon/reference/source", source_volume.rstrip("/")
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--sql-file", required=True)
     args = parser.parse_args()
     catalog = os.environ.get("AHON_CATALOG", "ahon")
-    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", catalog):
-        raise ValueError("AHON_CATALOG must be a simple SQL identifier")
+    source_volume = os.environ.get(
+        "AHON_SOURCE_VOLUME", f"/Volumes/{catalog}/reference/source"
+    )
     sql_path = Path(args.sql_file)
     if not sql_path.is_absolute():
         sql_path = Path(__file__).resolve().parents[3] / sql_path
     sql_text = sql_path.read_text(encoding="utf-8")
-    sql_text = re.sub(r"\bahon\.", f"{catalog}.", sql_text)
-    sql_text = sql_text.replace("/Volumes/ahon/", f"/Volumes/{catalog}/")
+    sql_text = render_sql(sql_text, catalog, source_volume)
 
     from pyspark.sql import SparkSession
 

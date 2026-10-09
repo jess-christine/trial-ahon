@@ -46,12 +46,19 @@ def main() -> None:
         DeltaTable.forName(spark, bronze_table).alias("target").merge(
             bronze.alias("source"),
             "target._source_ref = source._source_ref AND target._row_hash = source._row_hash",
+        ).whenMatchedUpdate(
+            set={
+                "_ingested_at": "source._ingested_at",
+                "_batch_id": "source._batch_id",
+            }
         ).whenNotMatchedInsertAll().execute()
     else:
         bronze.write.format("delta").mode("overwrite").saveAsTable(bronze_table)
-    row_count = spark.table(bronze_table).filter(F.col("_batch_id") == run_id).count()
+    row_count = bronze.count()
 
-    silver = spark.table(bronze_table).filter(F.col("_batch_id") == run_id).select(
+    silver = spark.table(bronze_table).filter(
+        F.col("_batch_id") == run_id
+    ).select(
         F.get_json_object("feature_json", f"$.properties.{property_name}")
         .cast("string")
         .alias("psgc_code"),

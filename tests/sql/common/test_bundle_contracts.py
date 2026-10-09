@@ -26,6 +26,16 @@ class BundleContractTests(TestCase):
         self.assertIn("spark_version: ${var.spark_version}", job)
         self.assertIn("max_retries: 1", job)
         self.assertIn("psgc_secret_scope: ${var.psgc_secret_scope}", job)
+        for assignment in (
+            "AHON_PSA_API_URL: ${var.psa_api_url}",
+            "AHON_PSA_CENSUS_YEAR: ${var.psa_census_year}",
+            "AHON_PHIVOLCS_BASE_URL: ${var.phivolcs_base_url}",
+            "AHON_BLGF_DATASET_REPO_ID: ${var.blgf_dataset_repo_id}",
+            "AHON_CMCI_PROCESS_URL: ${var.cmci_process_url}",
+            "AHON_CMCI_YEARS: ${var.cmci_years}",
+        ):
+            self.assertIn(assignment, job)
+        self.assertIn("psgc_periods: ${var.psgc_periods}", job)
 
     def test_bundle_task_files_exist(self) -> None:
         job = (REPOSITORY_ROOT / "resources" / "ahon_pipeline.yml").read_text(encoding="utf-8")

@@ -16,6 +16,15 @@ resources:
               AHON_SOURCE_VOLUME: ${var.source_volume_path}
               AHON_BOUNDARY_GEOJSON_PATH: ${var.boundary_geojson_path}
               AHON_BOUNDARY_CODE_PROPERTY: ${var.boundary_code_property}
+              AHON_PSA_API_URL: ${var.psa_api_url}
+              AHON_PSA_CENSUS_YEAR: ${var.psa_census_year}
+              AHON_PHIVOLCS_BASE_URL: ${var.phivolcs_base_url}
+              AHON_PHIVOLCS_YEARS_BACK: ${var.phivolcs_years_back}
+              AHON_BLGF_DATASET_REPO_ID: ${var.blgf_dataset_repo_id}
+              AHON_BLGF_DATASET_FOLDER: ${var.blgf_dataset_folder}
+              AHON_CMCI_PORTAL_URL: ${var.cmci_portal_url}
+              AHON_CMCI_PROCESS_URL: ${var.cmci_process_url}
+              AHON_CMCI_YEARS: ${var.cmci_years}
       tasks:
         - task_key: setup_catalog
           max_retries: 1
@@ -147,6 +156,8 @@ resources:
             base_parameters:
               psgc_secret_scope: ${var.psgc_secret_scope}
               psgc_secret_key: ${var.psgc_secret_key}
+              psgc_api_base_url: ${var.psgc_api_base_url}
+              psgc_periods: ${var.psgc_periods}
 
         - task_key: silver_psa
           max_retries: 1
