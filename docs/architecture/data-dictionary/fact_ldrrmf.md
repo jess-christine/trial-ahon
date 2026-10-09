@@ -10,7 +10,7 @@
 | Column | Type | Description | Notes |
 |---|---|---|---|
 | `ldrrmf_fact_key` | bigint | Deterministic warehouse key | Derived from source lineage; collisions are blocking |
-| `psgc_code` | varchar(10) | Matched PSGC code | `NULL` until an LGU matching rule is reviewed |
+| `psgc_code` | varchar(10) | Matched PSGC code | Populated only by unique exact LGU + province name match to active `lgu_master`; ambiguous/unmatched stays `NULL` |
 | `fiscal_year` | int | Fiscal reporting year | Parsed from source filename in Silver |
 | `region` | varchar(255) | Source region | Preserved from BLGF |
 | `province` | varchar(255) | Source province | Preserved from BLGF |
@@ -22,10 +22,10 @@
 | `expenditure_30_pct` | decimal(18,2) | 30% expenditure | Pesos |
 | `total_appropriation` | decimal(18,2) | Total appropriation | Pesos |
 | `total_expenditure` | decimal(18,2) | Total expenditure | Pesos |
-| `utilization_rate` | decimal(7,2) | Utilization rate | `NULL` until the project owner approves the formula and zero-appropriation behavior |
-| `match_status` | psgc_match_status | PSGC matching state | Currently `UNMATCHED`; physical Databricks type is `STRING` |
-| `match_confidence` | decimal(5,4) | Matching confidence | `NULL` because no approved match was attempted |
+| `utilization_rate` | decimal(7,2) | Utilization rate | Approved experimental formula: total expenditure / total appropriation * 100; `NULL` when denominator is zero or missing |
+| `match_status` | psgc_match_status | PSGC matching state | `MATCHED`, `AMBIGUOUS`, or `UNMATCHED`; physical Databricks type is `STRING` |
+| `match_confidence` | decimal(5,4) | Matching confidence | `NULL`; exact-match confidence is not calibrated |
 
 ## Quality and operations
 
-City and municipality Silver rows flow through in a deterministic snapshot. Silver-to-Gold row counts for those types and generated-key uniqueness are blocking checks; excluded province counts are written as a warning with their Silver retention location. Unmatched geography and unresolved utilization are warnings, preserving the data without implying a preparedness score. This fact does not derive utilization or apply name matching. Existing Bronze sum/amount checks remain warnings where the source findings allow legitimate exceptions.
+City and municipality Silver rows flow through in a deterministic snapshot. Silver-to-Gold row counts for those types and generated-key uniqueness are blocking checks; excluded province counts are written as a warning with their Silver retention location. Exact name matching is case- and whitespace-sensitive; unmatched or ambiguous rows remain present with a null PSGC. The approved utilization formula is applied in Gold and zero/missing appropriation remains null. Existing Bronze sum/amount checks remain warnings where the source findings allow legitimate exceptions.

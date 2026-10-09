@@ -84,4 +84,8 @@ CATALOG                    # ahon (production) or ahon_dev (development), with t
 - **Raw files:** raw files live in the `source` volume, which is now in the `reference` schema (`ahon.reference.source`), one folder per dataset. The volume holds files, not tables. The separate `source` schema stays listed as pending until the team decides its final name or drops it.
 - **Full rules:** see the [naming standard](docs/standards/naming.md) and [decision 0001](docs/decisions/0001-naming-standard.md).
 - Bronze quality checks cover every implemented Bronze table and append rule counts to `ahon.monitoring.dq_result`; see [monitoring operations](docs/operations/monitoring.md).
-- Silver source mappings are listed in the [data dictionary](docs/architecture/data-dictionary/README.md). They do not calculate risk or preparedness scores.
+- Silver source mappings are listed in the [data dictionary](docs/architecture/data-dictionary/README.md). Source-specific Silver jobs do not calculate risk or preparedness metrics; those are produced by the experimental Platinum layer.
+
+## Databricks execution
+
+Validate and deploy the [Databricks Asset Bundle](docs/operations/databricks-bundle.md) from the repository root. The manual `ahon_end_to_end` job runs setup, source ingestion, Bronze/Silver validation, Gold, and experimental Platinum in order. Workspace-specific node type, PSGC secret identifiers, reviewed CMCI mapping, landed source files, and the approved approximate boundary GeoJSON are required before a complete run.

@@ -316,7 +316,9 @@ if __name__ == "__main__":
     YEARS_TO_SCRAPE = 8 # From 2019 data (including current year:2026)
 
     #guys, change this if u want to reflect this on your catalog 
-    OUTPUT_DIR = "/Volumes/ahon/reference/source/philvolcs_earthquake"
+    catalog = os.environ.get("AHON_CATALOG", "ahon")
+    source_volume = os.environ.get("AHON_SOURCE_VOLUME", f"/Volumes/{catalog}/reference/source")
+    OUTPUT_DIR = os.path.join(source_volume, "philvolcs_earthquake")
     
     # Run the scraper
     combined_df, summary = scrape_multiple_years(

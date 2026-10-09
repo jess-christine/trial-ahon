@@ -40,6 +40,7 @@ class BronzeQualityTests(TestCase):
                 "ahon.bronze.psgc",
                 "ahon.bronze.cmci_raw_indicator_batch_html",
                 "ahon.bronze.cmci_raw_indicator",
+                "ahon.bronze.geoportal_city_municipality_boundary",
             },
         )
         self.assertTrue(all(dataset.checks for dataset in DATASETS))

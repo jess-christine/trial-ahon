@@ -1,0 +1,276 @@
+resources:
+  jobs:
+    ahon_end_to_end:
+      name: ahon-end-to-end-${bundle.target}
+      max_concurrent_runs: 1
+      queue:
+        enabled: true
+      job_clusters:
+        - job_cluster_key: ahon_batch
+          new_cluster:
+            spark_version: ${var.spark_version}
+            node_type_id: ${var.node_type_id}
+            num_workers: ${var.num_workers}
+            spark_env_vars:
+              AHON_CATALOG: ${var.catalog}
+              AHON_SOURCE_VOLUME: ${var.source_volume_path}
+              AHON_BOUNDARY_GEOJSON_PATH: ${var.boundary_geojson_path}
+              AHON_BOUNDARY_CODE_PROPERTY: ${var.boundary_code_property}
+      tasks:
+        - task_key: setup_catalog
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/00_setup/00_catalog_schema_setup.sql]
+
+        - task_key: setup_bronze
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: setup_catalog}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/00_setup/01_bronze_setup.sql]
+
+        - task_key: setup_monitoring
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: setup_bronze}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/00_setup/02_monitoring_setup.sql]
+
+        - task_key: setup_reference_and_gold
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: setup_monitoring}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/00_setup/06_reference.sql]
+
+        - task_key: setup_gold_tables
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: setup_reference_and_gold}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/00_setup/07_gold_setup.sql]
+
+        - task_key: load_active_lgu_reference
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: setup_gold_tables}]
+          job_cluster_key: ahon_batch
+          libraries: [{pypi: {package: pandas}}, {pypi: {package: openpyxl}}]
+          spark_python_task:
+            python_file: ../src/sql/06_reference/load_lgu_master.py
+
+        - task_key: extract_psa
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: setup_catalog}]
+          job_cluster_key: ahon_batch
+          libraries: [{pypi: {package: requests}}]
+          spark_python_task:
+            python_file: ../src/sql/datasets/psa_population/extract/extract_psa_population.py
+
+        - task_key: bronze_psa
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: extract_psa}, {task_key: setup_bronze}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/datasets/psa_population/bronze/load_psa_population.py
+
+        - task_key: extract_blgf
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: setup_catalog}]
+          job_cluster_key: ahon_batch
+          libraries: [{pypi: {package: huggingface_hub}}, {pypi: {package: pandas}}, {pypi: {package: openpyxl}}]
+          spark_python_task:
+            python_file: ../src/sql/datasets/blgf_ldrrmf_annual_lgu/extract/extract_blgf_ldrrmf_annual_lgu.py
+
+        - task_key: bronze_blgf
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: extract_blgf}, {task_key: setup_bronze}]
+          job_cluster_key: ahon_batch
+          libraries: [{pypi: {package: pandas}}, {pypi: {package: openpyxl}}]
+          spark_python_task:
+            python_file: ../src/sql/datasets/blgf_ldrrmf_annual_lgu/bronze/load_blgf_ldrrmf_annual_lgu.py
+
+        - task_key: extract_phivolcs
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: setup_catalog}]
+          job_cluster_key: ahon_batch
+          libraries: [{pypi: {package: pandas}}, {pypi: {package: lxml}}, {pypi: {package: requests}}]
+          spark_python_task:
+            python_file: ../src/sql/datasets/philvolcs_earthquake/extract/philvolcs_earthquake_ingest.py
+
+        - task_key: bronze_phivolcs
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: extract_phivolcs}, {task_key: setup_bronze}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/datasets/philvolcs_earthquake/bronze/philvolcs_earthquake.sql]
+
+        - task_key: extract_psgc
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: setup_bronze}]
+          job_cluster_key: ahon_batch
+          notebook_task:
+            notebook_path: ../src/sql/datasets/psgc/psgc_api.py
+            source: WORKSPACE
+            base_parameters:
+              psgc_secret_scope: ${var.psgc_secret_scope}
+              psgc_secret_key: ${var.psgc_secret_key}
+
+        - task_key: silver_psa
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: bronze_psa}, {task_key: validate_bronze}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/datasets/psa_population/silver/psa_population_clean.sql]
+
+        - task_key: silver_blgf
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: bronze_blgf}, {task_key: validate_bronze}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/datasets/blgf_ldrrmf_annual_lgu/silver/blgf_ldrrmf_annual_lgu_clean.sql]
+
+        - task_key: silver_psgc
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: extract_psgc}, {task_key: validate_bronze}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/datasets/psgc/silver/psgc_clean.sql]
+
+        - task_key: silver_phivolcs
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: bronze_phivolcs}, {task_key: validate_bronze}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/datasets/philvolcs_earthquake/silver/philvolcs_earthquake_clean.sql]
+
+        - task_key: cmci_ingestion
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: load_active_lgu_reference}, {task_key: setup_bronze}]
+          job_cluster_key: ahon_batch
+          libraries: [{pypi: {package: beautifulsoup4}}]
+          spark_python_task:
+            python_file: ../src/sql/01_bronze_ingest/cmci_batch_ingest.py
+
+        - task_key: cmci_silver_status
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: cmci_ingestion}, {task_key: validate_bronze}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/common/run_sql_file.py
+            parameters: [--sql-file, src/sql/02_silver_clean/cmci_batch_status.sql]
+
+        - task_key: cmci_silver_parse
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: cmci_silver_status}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/02_silver_clean/cmci_indicator_parse.py
+
+        - task_key: validate_bronze
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on:
+            - {task_key: bronze_blgf}
+            - {task_key: bronze_phivolcs}
+            - {task_key: bronze_psa}
+            - {task_key: extract_psgc}
+            - {task_key: cmci_ingestion}
+            - {task_key: load_geoportal_boundaries}
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/monitoring/bronze_quality.py
+
+        - task_key: load_geoportal_boundaries
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: setup_reference_and_gold}, {task_key: load_active_lgu_reference}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/platinum/load_lgu_boundaries.py
+
+        - task_key: build_gold
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on:
+            - {task_key: silver_blgf}
+            - {task_key: silver_phivolcs}
+            - {task_key: silver_psa}
+            - {task_key: silver_psgc}
+            - {task_key: cmci_silver_parse}
+            - {task_key: load_geoportal_boundaries}
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/gold/build_gold.py
+
+        - task_key: validate_silver_gold
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: build_gold}, {task_key: validate_bronze}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/monitoring/silver_gold_quality.py
+
+        - task_key: build_platinum
+          max_retries: 1
+          min_retry_interval_millis: 30000
+          retry_on_timeout: true
+          depends_on: [{task_key: validate_silver_gold}]
+          job_cluster_key: ahon_batch
+          spark_python_task:
+            python_file: ../src/sql/platinum/build_platinum.py
+

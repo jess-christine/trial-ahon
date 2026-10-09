@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -120,6 +121,23 @@ DATASETS = (
         ),
         ("year",),
     ),
+    Dataset(
+        "ahon.bronze.geoportal_city_municipality_boundary",
+        "geoportal_city_municipality_boundary",
+        ("feature_json",),
+        (
+            Check("feature_json_present", "BLOCKING", "feature_json IS NULL OR trim(feature_json) = ''"),
+            Check("feature_geometry_present", "WARNING", "get_json_object(feature_json, '$.geometry') IS NULL"),
+            Check("duplicate_source_feature", "WARNING", key_columns=("_source_ref", "_row_hash")),
+        ),
+        ("_source_ref",),
+    ),
+)
+
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+DATASETS = tuple(
+    replace(dataset, table_name=dataset.table_name.replace("ahon.", f"{CATALOG}.", 1))
+    for dataset in DATASETS
 )
 
 
@@ -333,7 +351,7 @@ def main() -> None:
         ]
     )
     spark.createDataFrame(results, schema).write.mode("append").saveAsTable(
-        "ahon.monitoring.dq_result"
+        f"{CATALOG}.monitoring.dq_result"
     )
 
     print(f"Quality run {run_id}: {len(results)} rules across {len(DATASETS)} tables")

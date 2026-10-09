@@ -1,13 +1,16 @@
+# Databricks notebook source
 # ruff: noqa
 # Generated from: psgc_api.ipynb
 # Converted at: 2026-10-05T20:17:10.840Z
 # It uses dbutils and spark which are only available in Databricks environments.
 
 # --- Parameters ---
-# Create a widget for the PSGC API token so the credential is never
-# hardcoded in the notebook. Paste your token into the widget above.
-dbutils.widgets.text("psgc_api_token", "", "PSGC API Token")
+# Pass secret identifiers as job parameters; the token itself stays in the
+# workspace secret store and is never written to notebook parameters or logs.
+dbutils.widgets.text("psgc_secret_scope", "", "PSGC token secret scope")
+dbutils.widgets.text("psgc_secret_key", "", "PSGC token secret key")
 
+import os
 import time
 import uuid
 
@@ -16,9 +19,12 @@ from pyspark.sql.functions import col, concat_ws, current_timestamp, lit, sha2, 
 
 API_BASE = "https://classification.psa.gov.ph/psgc"
 PERIODS = ["Q2_2024", "April_2024", "Q4_2023", "Q2_2021"]
-BRONZE_TABLE = "ahon.bronze.psgc"
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+BRONZE_TABLE = f"{CATALOG}.bronze.psgc"
 
-api_token = dbutils.widgets.get("psgc_api_token").strip()
+secret_scope = dbutils.widgets.get("psgc_secret_scope").strip()
+secret_key = dbutils.widgets.get("psgc_secret_key").strip()
+api_token = dbutils.secrets.get(scope=secret_scope, key=secret_key) if secret_scope and secret_key else ""
 
 if not api_token:
     print(

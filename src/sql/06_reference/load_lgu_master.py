@@ -1,4 +1,7 @@
+import os
+
 import pandas as pd
+from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
     BooleanType,
@@ -8,42 +11,21 @@ from pyspark.sql.types import (
     StructType,
 )
 
-# =====================================================
-# CONFIG
-# =====================================================
-
-SOURCE_PATH = (
-    "/Volumes/ahon/reference/source/"
-    "PSGC-2Q-2026-Publication-Datafile.xlsx"
-)
-
-SOURCE_FILE = "PSGC-2Q-2026-Publication-Datafile.xlsx"
-SOURCE_SHEET = "PSGC"
-SOURCE_PUBLICATION_DATE = "2026-06-30"
-
-TARGET_TABLE = "ahon.reference.lgu_master"
-
-EXPECTED_CITY_COUNT = 149
-EXPECTED_MUNICIPALITY_COUNT = 1493
-EXPECTED_TOTAL_COUNT = 1642
-EXPECTED_PROVINCE_LINKED_COUNT = 1599
-EXPECTED_NO_PROVINCE_COUNT = 43
-
+spark = SparkSession.builder.getOrCreate()
 
 # =====================================================
 # CONFIG
 # =====================================================
 
-SOURCE_PATH = (
-    "/Volumes/ahon/reference/source/"
-    "PSGC-2Q-2026-Publication-Datafile.xlsx"
-)
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+SOURCE_VOLUME = os.environ.get("AHON_SOURCE_VOLUME", f"/Volumes/{CATALOG}/reference/source")
+SOURCE_PATH = f"{SOURCE_VOLUME}/PSGC-2Q-2026-Publication-Datafile.xlsx"
 
 SOURCE_FILE = "PSGC-2Q-2026-Publication-Datafile.xlsx"
 SOURCE_SHEET = "PSGC"
 SOURCE_PUBLICATION_DATE = "2026-06-30"
 
-TARGET_TABLE = "ahon.reference.lgu_master"
+TARGET_TABLE = f"{CATALOG}.reference.lgu_master"
 
 EXPECTED_CITY_COUNT = 149
 EXPECTED_MUNICIPALITY_COUNT = 1493

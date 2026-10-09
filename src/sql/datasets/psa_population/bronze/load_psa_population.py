@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import csv
+import os
 import uuid
 from pathlib import Path
 
@@ -15,10 +16,11 @@ from pyspark.sql.types import StringType, StructField, StructType
 # COMMAND ----------
 
 # Settings: change here if the team renames anything
-VOLUME_ROOT = Path("/Volumes/ahon/reference/source")
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+VOLUME_ROOT = Path(os.environ.get("AHON_SOURCE_VOLUME", f"/Volumes/{CATALOG}/reference/source"))
 DATASET_NAME = "psa_population"
 SOURCE_PATH = VOLUME_ROOT / DATASET_NAME / "2024_population_urban.csv"
-TABLE_NAME = "ahon.bronze.psa_population_raw"
+TABLE_NAME = f"{CATALOG}.bronze.psa_population_raw"
 CENSUS_YEAR = "2024"
 MERGE_KEYS = ["geographic_location", "census_year"]
 RAW_COLS = [

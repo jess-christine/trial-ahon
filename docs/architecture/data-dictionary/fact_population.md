@@ -26,4 +26,4 @@ Run `src/sql/00_setup/07_gold_setup.sql`, then `src/sql/gold/build_gold.py`, the
 
 ## Limitations and open decisions
 
-PSA reports repeated place names across provinces, which is why both names are required for matching. Exact text differences and the 43 active LGUs without province assignment remain unmatched. The current data dictionary documents 2024 only. Before a Platinum score is calculated, approve normalization, the intended population measure, handling of unmatched rows, and the relationship between the one-census-year population source and the earthquake analysis time window.
+PSA reports repeated place names across provinces, which is why both names are required for matching. Exact text differences and active LGUs without province assignment remain unmatched. The current data dictionary documents the 2024 extract only. Platinum uses the latest matched total-population value and a within-year percentile; this is experimental and must be interpreted with the population coverage and time-window limitation documented in [Platinum metrics](platinum_analytics.md).

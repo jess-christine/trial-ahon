@@ -9,6 +9,7 @@
 # Run it as a file (Databricks job or `databricks bundle run`), not as a notebook.
 # Requires the `huggingface_hub` package on the cluster (add it as a library on the job or cluster).
 
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -21,7 +22,8 @@ HF_FOLDER = "data/ldrrmf"
 
 # Destination: the source volume, one folder per dataset, named after the dataset
 # (naming standard). The volume name is a stand-in and may change.
-VOLUME_ROOT = "/Volumes/ahon_dev/reference/source"
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+VOLUME_ROOT = os.environ.get("AHON_SOURCE_VOLUME", f"/Volumes/{CATALOG}/reference/source")
 DATASET_NAME = "blgf_ldrrmf_annual_lgu"
 TARGET_DIR = Path(VOLUME_ROOT) / DATASET_NAME
 

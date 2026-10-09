@@ -3,16 +3,24 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
 from bronze_quality import result_status, schema_drift
 
-BLGF_SILVER = "ahon.silver.blgf_ldrrmf_annual_lgu_clean"
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+
+
+def table_name(name: str) -> str:
+    return name.replace("ahon.", f"{CATALOG}.", 1)
+
+
+BLGF_SILVER = table_name("ahon.silver.blgf_ldrrmf_annual_lgu_clean")
 
 CMCI_CODE_DIR = Path(__file__).resolve().parents[1] / "01_bronze_ingest"
 sys.path.insert(0, str(CMCI_CODE_DIR))
@@ -227,7 +235,8 @@ def contracts() -> tuple[Contract, ...]:
                 Rule("unique_fact_key", "BLOCKING", key_columns=("ldrrmf_fact_key",)),
                 Rule("city_municipality_scope", "BLOCKING", "lgu_type IS NULL OR lgu_type NOT IN ('City', 'Municipality')"),
                 Rule("unmatched_lgu_rows", "WARNING", "match_status = 'UNMATCHED' OR psgc_code IS NULL"),
-                Rule("utilization_rate_unresolved", "WARNING", "utilization_rate IS NULL"),
+                Rule("utilization_rate_missing_for_calculable_row", "BLOCKING", "total_appropriation <> 0 AND total_appropriation IS NOT NULL AND total_expenditure IS NOT NULL AND utilization_rate IS NULL"),
+                Rule("utilization_rate_formula", "BLOCKING", "total_appropriation <> 0 AND total_appropriation IS NOT NULL AND total_expenditure IS NOT NULL AND abs(utilization_rate - total_expenditure * 100 / total_appropriation) > 0.01"),
             ),
             ("fiscal_year",),
         ),
@@ -261,7 +270,8 @@ def main() -> None:
     blocking = []
     row_counts = {}
 
-    for contract in contracts():
+    for base_contract in contracts():
+        contract = replace(base_contract, table=table_name(base_contract.table))
         try:
             frame = spark.table(contract.table)
         except AnalysisException as error:
@@ -390,35 +400,35 @@ def main() -> None:
 
     # Exact source/target reconciliations are used only where the Silver job
     # promises a snapshot or a defined key-level merge.
-    if "ahon.silver.blgf_ldrrmf_annual_lgu_clean" in row_counts:
+    if table_name("ahon.silver.blgf_ldrrmf_annual_lgu_clean") in row_counts:
         record_reconciliation(
             "silver",
             "blgf_ldrrmf_annual_lgu",
-            "ahon.silver.blgf_ldrrmf_annual_lgu_clean",
+            table_name("ahon.silver.blgf_ldrrmf_annual_lgu_clean"),
             "bronze_silver_row_count",
-            spark.table("ahon.bronze.blgf_ldrrmf_annual_lgu").count(),
-            row_counts["ahon.silver.blgf_ldrrmf_annual_lgu_clean"],
+            spark.table(table_name("ahon.bronze.blgf_ldrrmf_annual_lgu")).count(),
+            row_counts[table_name("ahon.silver.blgf_ldrrmf_annual_lgu_clean")],
         )
-    if "ahon.silver.psgc_clean" in row_counts:
+    if table_name("ahon.silver.psgc_clean") in row_counts:
         record_reconciliation(
             "silver",
             "psgc",
-            "ahon.silver.psgc_clean",
+            table_name("ahon.silver.psgc_clean"),
             "bronze_silver_row_count",
-            spark.table("ahon.bronze.psgc").count(),
-            row_counts["ahon.silver.psgc_clean"],
+            spark.table(table_name("ahon.bronze.psgc")).count(),
+            row_counts[table_name("ahon.silver.psgc_clean")],
         )
-    if "ahon.silver.cmci_ingestion_batch_clean" in row_counts:
+    if table_name("ahon.silver.cmci_ingestion_batch_clean") in row_counts:
         record_reconciliation(
             "silver",
             "cmci",
-            "ahon.silver.cmci_ingestion_batch_clean",
+            table_name("ahon.silver.cmci_ingestion_batch_clean"),
             "bronze_silver_batch_count",
-            spark.table("ahon.bronze.cmci_raw_indicator_batch_html").count(),
-            row_counts["ahon.silver.cmci_ingestion_batch_clean"],
+            spark.table(table_name("ahon.bronze.cmci_raw_indicator_batch_html")).count(),
+            row_counts[table_name("ahon.silver.cmci_ingestion_batch_clean")],
         )
-    if "ahon.silver.psa_population_clean" in row_counts:
-        psa = spark.table("ahon.bronze.psa_population_raw")
+    if table_name("ahon.silver.psa_population_clean") in row_counts:
+        psa = spark.table(table_name("ahon.bronze.psa_population_raw"))
         expected_psa_keys = (
             psa.select(
                 F.regexp_replace("geographic_location", r"\s+1/$", "").alias(
@@ -432,13 +442,13 @@ def main() -> None:
         record_reconciliation(
             "silver",
             "psa_population",
-            "ahon.silver.psa_population_clean",
+            table_name("ahon.silver.psa_population_clean"),
             "distinct_bronze_key_silver_row_count",
             expected_psa_keys,
-            row_counts["ahon.silver.psa_population_clean"],
+            row_counts[table_name("ahon.silver.psa_population_clean")],
         )
-    if "ahon.silver.philvolcs_earthquake_data_clean" in row_counts:
-        quake = spark.table("ahon.bronze.philvolcs_earthquake_data")
+    if table_name("ahon.silver.philvolcs_earthquake_data_clean") in row_counts:
+        quake = spark.table(table_name("ahon.bronze.philvolcs_earthquake_data"))
         parsed_time = F.expr("try_to_timestamp(`Date-Time`, 'dd MMMM yyyy - hh:mm a')")
         valid_quake_count = quake.filter(
             (F.trim(F.col("Date-Time")) != "")
@@ -451,15 +461,15 @@ def main() -> None:
         record_reconciliation(
             "silver",
             "philvolcs_earthquake",
-            "ahon.silver.philvolcs_earthquake_data_clean",
+            table_name("ahon.silver.philvolcs_earthquake_data_clean"),
             "valid_bronze_silver_row_count",
             valid_quake_count,
-            row_counts["ahon.silver.philvolcs_earthquake_data_clean"],
+            row_counts[table_name("ahon.silver.philvolcs_earthquake_data_clean")],
         )
 
-    complete_cmci_batches = "ahon.silver.cmci_ingestion_batch_clean"
+    complete_cmci_batches = table_name("ahon.silver.cmci_ingestion_batch_clean")
     cmci_pillars = [
-        ("ahon.silver.cmci_" + pillar.lower().replace(" ", "_"), len(indicators))
+        (table_name("ahon.silver.cmci_" + pillar.lower().replace(" ", "_")), len(indicators))
         for pillar, indicators in INDICATORS_BY_PILLAR.items()
     ]
     if complete_cmci_batches in row_counts and all(
@@ -472,7 +482,7 @@ def main() -> None:
             .distinct()
         )
         expected_pairs = (
-            spark.table("ahon.bronze.cmci_raw_indicator")
+            spark.table(table_name("ahon.bronze.cmci_raw_indicator"))
             .join(batch_ids, "batch_id", "inner")
             .select("psgc_code", "year")
             .distinct()
@@ -484,15 +494,15 @@ def main() -> None:
                 expected_pairs, row_counts[table],
             )
 
-    if "ahon.gold.dim_lgu" in row_counts:
-        expected = spark.table("ahon.reference.lgu_master").filter(
+    if table_name("ahon.gold.dim_lgu") in row_counts:
+        expected = spark.table(table_name("ahon.reference.lgu_master")).filter(
             F.col("is_active") == F.lit(True)
         ).count()
         record_reconciliation(
-            "gold", "geography", "ahon.gold.dim_lgu", "active_reference_row_count", expected,
-            row_counts["ahon.gold.dim_lgu"],
+            "gold", "geography", table_name("ahon.gold.dim_lgu"), "active_reference_row_count", expected,
+            row_counts[table_name("ahon.gold.dim_lgu")],
         )
-        hierarchy = spark.table("ahon.silver.psgc_clean").groupBy("psgc_code").agg(
+        hierarchy = spark.table(table_name("ahon.silver.psgc_clean")).groupBy("psgc_code").agg(
             F.countDistinct(
                 F.struct(
                     "region_code",
@@ -505,7 +515,7 @@ def main() -> None:
         conflicted_codes = (
             hierarchy.filter(F.col("version_count") > 1)
             .join(
-                spark.table("ahon.reference.lgu_master")
+                spark.table(table_name("ahon.reference.lgu_master"))
                 .filter(F.col("is_active") == F.lit(True))
                 .select("psgc_code"),
                 "psgc_code",
@@ -518,24 +528,24 @@ def main() -> None:
                 run_id,
                 checked_at,
                 "geography",
-                "ahon.gold.dim_lgu",
+                table_name("ahon.gold.dim_lgu"),
                 "conflicting_psgc_hierarchy_versions",
                 "WARNING",
                 result_status(conflicted_codes, "WARNING"),
-                row_counts["ahon.gold.dim_lgu"],
+                row_counts[table_name("ahon.gold.dim_lgu")],
                 conflicted_codes,
                 json.dumps({"layer": "gold", "hierarchy_codes_are_null_for_conflicts": True}),
             )
         )
         province_conflicts = (
-            spark.table("ahon.reference.lgu_master")
+            spark.table(table_name("ahon.reference.lgu_master"))
             .filter(
                 (F.col("is_active") == F.lit(True))
                 & F.col("province_code").isNotNull()
             )
             .alias("reference")
             .join(
-                spark.table("ahon.silver.psgc_clean")
+                spark.table(table_name("ahon.silver.psgc_clean"))
                 .filter(F.col("province_code").isNotNull())
                 .select("psgc_code", "province_code")
                 .distinct()
@@ -553,30 +563,30 @@ def main() -> None:
                 run_id,
                 checked_at,
                 "geography",
-                "ahon.gold.dim_lgu",
+                table_name("ahon.gold.dim_lgu"),
                 "province_code_disagrees_with_active_reference",
                 "WARNING",
                 result_status(province_conflicts, "WARNING"),
-                row_counts["ahon.gold.dim_lgu"],
+                row_counts[table_name("ahon.gold.dim_lgu")],
                 province_conflicts,
                 json.dumps({"layer": "gold", "dim_lgu_uses": "lgu_master.province_code"}),
             )
         )
-    if "ahon.gold.dim_cmci_indicator" in row_counts:
+    if table_name("ahon.gold.dim_cmci_indicator") in row_counts:
         expected = sum(len(values) for values in INDICATORS_BY_PILLAR.values())
         record_reconciliation(
-            "gold", "cmci", "ahon.gold.dim_cmci_indicator", "approved_indicator_count",
-            expected, row_counts["ahon.gold.dim_cmci_indicator"],
+            "gold", "cmci", table_name("ahon.gold.dim_cmci_indicator"), "approved_indicator_count",
+            expected, row_counts[table_name("ahon.gold.dim_cmci_indicator")],
         )
-    if "ahon.gold.fact_population" in row_counts:
-        psa_silver = spark.table("ahon.silver.psa_population_clean")
+    if table_name("ahon.gold.fact_population") in row_counts:
+        psa_silver = spark.table(table_name("ahon.silver.psa_population_clean"))
         expected = psa_silver.filter(
             F.col("geographic_level") == "City/Municipality"
         ).count()
         record_reconciliation(
-            "gold", "psa_population", "ahon.gold.fact_population",
+            "gold", "psa_population", table_name("ahon.gold.fact_population"),
             "city_municipality_silver_gold_row_count", expected,
-            row_counts["ahon.gold.fact_population"],
+            row_counts[table_name("ahon.gold.fact_population")],
         )
         excluded_levels = {
             row["geographic_level"] or "<NULL>": row["count"]
@@ -586,8 +596,8 @@ def main() -> None:
             ).groupBy("geographic_level").count().collect()
         }
         excluded_population_count = sum(excluded_levels.values())
-        results.append((run_id, checked_at, "psa_population", "ahon.gold.fact_population", "non_city_municipality_rows_excluded_by_scope", "WARNING", result_status(excluded_population_count, "WARNING"), row_counts["ahon.gold.fact_population"], excluded_population_count, json.dumps({"layer": "gold", "excluded_source_geographic_levels": excluded_levels, "rows_remain_in": "ahon.silver.psa_population_clean"}, sort_keys=True)))
-    if "ahon.gold.fact_ldrrmf" in row_counts:
+        results.append((run_id, checked_at, "psa_population", table_name("ahon.gold.fact_population"), "non_city_municipality_rows_excluded_by_scope", "WARNING", result_status(excluded_population_count, "WARNING"), row_counts[table_name("ahon.gold.fact_population")], excluded_population_count, json.dumps({"layer": "gold", "excluded_source_geographic_levels": excluded_levels, "rows_remain_in": table_name("ahon.silver.psa_population_clean")}, sort_keys=True)))
+    if table_name("ahon.gold.fact_ldrrmf") in row_counts:
         silver_ldrrmf = spark.table(BLGF_SILVER)
         expected = silver_ldrrmf.filter(
             F.col("lgu_type").isin("City", "Municipality")
@@ -601,38 +611,38 @@ def main() -> None:
         }
         excluded_rows = sum(excluded_type_counts.values())
         record_reconciliation(
-            "gold", "blgf_ldrrmf_annual_lgu", "ahon.gold.fact_ldrrmf",
+            "gold", "blgf_ldrrmf_annual_lgu", table_name("ahon.gold.fact_ldrrmf"),
             "city_municipality_silver_gold_row_count", expected,
-            row_counts["ahon.gold.fact_ldrrmf"],
+            row_counts[table_name("ahon.gold.fact_ldrrmf")],
         )
-        results.append((run_id, checked_at, "blgf_ldrrmf_annual_lgu", "ahon.gold.fact_ldrrmf", "non_city_municipality_rows_excluded_by_scope", "WARNING", result_status(excluded_rows, "WARNING"), row_counts["ahon.gold.fact_ldrrmf"], excluded_rows, json.dumps({"layer": "gold", "excluded_lgu_type_counts": excluded_type_counts, "rows_remain_in": "ahon.silver.blgf_ldrrmf_annual_lgu_clean"}, sort_keys=True)))
+        results.append((run_id, checked_at, "blgf_ldrrmf_annual_lgu", table_name("ahon.gold.fact_ldrrmf"), "non_city_municipality_rows_excluded_by_scope", "WARNING", result_status(excluded_rows, "WARNING"), row_counts[table_name("ahon.gold.fact_ldrrmf")], excluded_rows, json.dumps({"layer": "gold", "excluded_lgu_type_counts": excluded_type_counts, "rows_remain_in": table_name("ahon.silver.blgf_ldrrmf_annual_lgu_clean")}, sort_keys=True)))
     for table, source in (
-        ("ahon.gold.fact_earthquake_event", "ahon.silver.philvolcs_earthquake_data_clean"),
+        (table_name("ahon.gold.fact_earthquake_event"), table_name("ahon.silver.philvolcs_earthquake_data_clean")),
     ):
         if table in row_counts and source in row_counts:
             record_reconciliation(
                 "gold", table.rsplit(".", 1)[-1], table, "silver_gold_row_count",
                 row_counts[source], row_counts[table],
             )
-    if "ahon.gold.fact_cmci_indicator" in row_counts:
+    if table_name("ahon.gold.fact_cmci_indicator") in row_counts:
         expected = sum(
             row_counts.get(
-                "ahon.silver.cmci_" + pillar.lower().replace(" ", "_"), 0
+                table_name("ahon.silver.cmci_" + pillar.lower().replace(" ", "_")), 0
             )
             * len(indicators)
             for pillar, indicators in INDICATORS_BY_PILLAR.items()
         )
         record_reconciliation(
-            "gold", "cmci", "ahon.gold.fact_cmci_indicator",
+            "gold", "cmci", table_name("ahon.gold.fact_cmci_indicator"),
             "silver_indicator_to_gold_fact_row_count", expected,
-            row_counts["ahon.gold.fact_cmci_indicator"],
+            row_counts[table_name("ahon.gold.fact_cmci_indicator")],
         )
 
     # Referential integrity is checked only after all expected Gold tables exist.
     foreign_keys = (
-        ("ahon.gold.fact_cmci_indicator", "psgc_code", "ahon.gold.dim_lgu", "psgc_code"),
-        ("ahon.gold.fact_cmci_indicator", "indicator_code", "ahon.gold.dim_cmci_indicator", "indicator_code"),
-        ("ahon.gold.fact_population", "psgc_code", "ahon.gold.dim_lgu", "psgc_code"),
+        (table_name("ahon.gold.fact_cmci_indicator"), "psgc_code", table_name("ahon.gold.dim_lgu"), "psgc_code"),
+        (table_name("ahon.gold.fact_cmci_indicator"), "indicator_code", table_name("ahon.gold.dim_cmci_indicator"), "indicator_code"),
+        (table_name("ahon.gold.fact_population"), "psgc_code", table_name("ahon.gold.dim_lgu"), "psgc_code"),
     )
     for child_table, child_column, parent_table, parent_column in foreign_keys:
         if not spark.catalog.tableExists(child_table) or not spark.catalog.tableExists(parent_table):
@@ -678,7 +688,7 @@ def main() -> None:
         ]
     )
     spark.createDataFrame(results, schema).write.mode("append").saveAsTable(
-        "ahon.monitoring.dq_result"
+        table_name("ahon.monitoring.dq_result")
     )
     print(f"Layer quality run {run_id}: {len(results)} results")
     if blocking:

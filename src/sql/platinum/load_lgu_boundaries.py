@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 
 
 def main() -> None:
+    from delta.tables import DeltaTable
     from pyspark.sql import SparkSession, functions as F
 
     catalog = os.environ.get("AHON_CATALOG", "ahon")
@@ -29,9 +30,6 @@ def main() -> None:
         .select(F.explode("features").alias("feature"))
         .select(F.to_json("feature").alias("feature_json"))
     )
-    if raw.limit(1).count() == 0:
-        raise ValueError(f"No GeoJSON features found in {source_ref}")
-
     run_id = str(uuid.uuid4())
     loaded_at = datetime.now(timezone.utc)
     bronze = raw.select(
@@ -44,9 +42,16 @@ def main() -> None:
     )
     bronze_table = f"{catalog}.bronze.geoportal_city_municipality_boundary"
     silver_table = f"{catalog}.silver.lgu_boundary_clean"
-    bronze.write.format("delta").mode("overwrite").saveAsTable(bronze_table)
+    if spark.catalog.tableExists(bronze_table):
+        DeltaTable.forName(spark, bronze_table).alias("target").merge(
+            bronze.alias("source"),
+            "target._source_ref = source._source_ref AND target._row_hash = source._row_hash",
+        ).whenNotMatchedInsertAll().execute()
+    else:
+        bronze.write.format("delta").mode("overwrite").saveAsTable(bronze_table)
+    row_count = spark.table(bronze_table).filter(F.col("_batch_id") == run_id).count()
 
-    silver = spark.table(bronze_table).select(
+    silver = spark.table(bronze_table).filter(F.col("_batch_id") == run_id).select(
         F.get_json_object("feature_json", f"$.properties.{property_name}")
         .cast("string")
         .alias("psgc_code"),
@@ -79,6 +84,22 @@ def main() -> None:
         F.col("boundary_geojson").isNull()
         | F.expr("try_to_geometry(boundary_geojson) IS NULL")
     ).count()
+    non_polygon_geometry = silver.filter(
+        F.expr(
+            "try_to_geometry(boundary_geojson) IS NOT NULL AND "
+            "upper(st_geometrytype(try_to_geometry(boundary_geojson))) "
+            "NOT IN ('POLYGON', 'MULTIPOLYGON')"
+        )
+    ).count()
+    out_of_bounds_geometry = silver.filter(
+        F.expr(
+            "try_to_geometry(boundary_geojson) IS NOT NULL AND "
+            "(st_xmin(try_to_geometry(boundary_geojson)) < -180 OR "
+            "st_xmax(try_to_geometry(boundary_geojson)) > 180 OR "
+            "st_ymin(try_to_geometry(boundary_geojson)) < -90 OR "
+            "st_ymax(try_to_geometry(boundary_geojson)) > 90)"
+        )
+    ).count()
     details = json.dumps(
         {
             "source_ref": source_ref,
@@ -87,14 +108,19 @@ def main() -> None:
             "duplicate_codes": duplicate_codes,
             "unknown_or_inactive_codes": unknown_codes,
             "malformed_geometry": malformed_geometry,
+            "non_polygon_geometry": non_polygon_geometry,
+            "out_of_bounds_geometry": out_of_bounds_geometry,
         },
         sort_keys=True,
     )
     checks = [
-        ("boundary_code_format", invalid_codes, "WARNING"),
+        ("boundary_code_format", invalid_codes, "BLOCKING"),
         ("boundary_codes_unique", duplicate_codes, "BLOCKING"),
         ("boundary_code_active_city_municipality", unknown_codes, "WARNING"),
         ("boundary_geometry_valid", malformed_geometry, "BLOCKING"),
+        ("boundary_geometry_type", non_polygon_geometry, "BLOCKING"),
+        ("boundary_geometry_coordinate_range", out_of_bounds_geometry, "BLOCKING"),
+        ("source_has_features", 0 if row_count else 1, "BLOCKING"),
     ]
     result_rows = [
         (
@@ -105,7 +131,7 @@ def main() -> None:
             rule,
             severity,
             "FAIL" if failures and severity == "BLOCKING" else "WARN" if failures else "PASS",
-            bronze.count(),
+            row_count,
             int(failures),
             details,
         )
@@ -115,12 +141,14 @@ def main() -> None:
     spark.createDataFrame(result_rows, schema).write.mode("append").saveAsTable(
         f"{catalog}.monitoring.dq_result"
     )
-    if duplicate_codes or malformed_geometry:
+    if not row_count or invalid_codes or duplicate_codes or malformed_geometry or non_polygon_geometry or out_of_bounds_geometry:
         raise RuntimeError(
             "Boundary contract failed: "
-            f"duplicate codes={duplicate_codes}, malformed geometry={malformed_geometry}"
+            f"invalid codes={invalid_codes}, duplicate codes={duplicate_codes}, "
+            f"malformed geometry={malformed_geometry}, non-polygons={non_polygon_geometry}, "
+            f"out-of-bounds geometries={out_of_bounds_geometry}"
         )
-    print(f"Loaded {bronze.count()} approximate boundary features; {details}")
+    print(f"Loaded {row_count} approximate boundary features; {details}")
 
 
 if __name__ == "__main__":

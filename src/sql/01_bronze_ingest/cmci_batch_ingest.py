@@ -1,12 +1,14 @@
 import argparse
 import hashlib
 import math
+import os
 import time
 from datetime import datetime, timezone
 import json
 import uuid
 
 from bs4 import BeautifulSoup
+from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
     ArrayType,
@@ -29,15 +31,16 @@ from cmci_common import (
     create_http_session,
 )
 
+spark = SparkSession.builder.getOrCreate()
+
 # ------------------------------------------------------------------
 # CONFIG
 # ------------------------------------------------------------------
 
-CMCI_MAP_TABLE = "ahon.reference.cmci_lgu_map"
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+CMCI_MAP_TABLE = f"{CATALOG}.reference.cmci_lgu_map"
 
-TARGET_TABLE = (
-    "ahon.bronze.cmci_raw_indicator_batch_html"
-)
+TARGET_TABLE = f"{CATALOG}.bronze.cmci_raw_indicator_batch_html"
 
 REQUEST_DELAY_SECONDS = 1.0
 

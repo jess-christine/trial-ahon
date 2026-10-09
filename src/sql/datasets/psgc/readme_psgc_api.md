@@ -19,7 +19,7 @@ Pull from the PSGC API rather than downloading publication csv files.
 
 | Step | What happens |
 |------|--------------|
-| 1. Parameters | Token is read from the `psgc_api_token` Databricks widget (never hardcoded). |
+| 1. Parameters | The job receives secret scope/key identifiers and reads the token from Databricks Secrets; token values are never job parameters or logs. |
 | 2. Extract | Loops over each period, follows `next` pagination, pauses 0.2s between pages, and collects all records into `all_records`. |
 | 3. Transform | Renames API fields to the bronze schema (`code` → `psgc_code`, `reg`/`prv`/`mun`/`bgy` → `*_code`) and serializes `populations` to `populations_json`. |
 | 4. Load | `MERGE` into the bronze table, matching on `_row_hash`. |
@@ -44,8 +44,8 @@ Rows are matched on `_row_hash`, so re-running the notebook with unchanged data 
 
 ## Usage
 
-1. Paste your PSGC API token into the **PSGC API Token** widget.
-2. Run the extract cells, then the bronze load cell.
+1. Configure `psgc_secret_scope` and `psgc_secret_key` for the job using an existing Databricks secret.
+2. Run the PSGC task from the `ahon_end_to_end` bundle job.
 3. Check the printed row count, batch ID, and merge metrics.
 
 ## Notes

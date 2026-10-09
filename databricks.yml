@@ -1,0 +1,52 @@
+bundle:
+  name: ahon-pipeline
+
+include:
+  - resources/*.yml
+
+sync:
+  include:
+    - src/**
+    - resources/**
+  exclude:
+    - resources/source/**
+
+variables:
+  catalog:
+    description: Unity Catalog environment for this deployment.
+    default: ahon_dev
+  spark_version:
+    description: Databricks Runtime with native spatial SQL support.
+    default: 17.1.x-scala2.13
+  node_type_id:
+    description: Cloud-specific node type available in the target workspace.
+  num_workers:
+    description: Small job-cluster size; increase only when measured volume requires it.
+    default: 1
+  source_volume_path:
+    description: Root of the reference.source volume used for landed source files.
+    default: /Volumes/ahon_dev/reference/source
+  boundary_geojson_path:
+    description: GeoPortal approximate city/municipality GeoJSON in the source volume.
+    default: /Volumes/ahon_dev/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
+  boundary_code_property:
+    description: GeoJSON properties field containing the official 10-digit PSGC code.
+  psgc_secret_scope:
+    description: Existing Databricks secret scope containing the PSGC API token.
+  psgc_secret_key:
+    description: Existing Databricks secret key containing the PSGC API token.
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      catalog: ahon_dev
+      source_volume_path: /Volumes/ahon_dev/reference/source
+      boundary_geojson_path: /Volumes/ahon_dev/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
+  prod:
+    mode: production
+    variables:
+      catalog: ahon
+      source_volume_path: /Volumes/ahon/reference/source
+      boundary_geojson_path: /Volumes/ahon/reference/source/lgu_boundaries/geoportal_city_municipality.geojson

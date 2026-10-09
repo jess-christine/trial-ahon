@@ -9,6 +9,7 @@
 # Bronze keeps the values as received. Cleaning (fiscal_year, PSGC, flags) happens in silver.
 # Run it as a file (Databricks job) or paste it into a notebook cell.
 
+import os
 import uuid
 from pathlib import Path
 
@@ -20,9 +21,9 @@ from pyspark.sql.types import DoubleType, StringType, StructField, StructType
 spark = SparkSession.builder.getOrCreate()
 
 # Settings: change here if the team renames anything
-CATALOG = "ahon_dev"
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
 SOURCE_NAME = "blgf_ldrrmf_annual_lgu"
-SOURCE_DIR = Path(f"/Volumes/{CATALOG}/reference/source/{SOURCE_NAME}")
+SOURCE_DIR = Path(os.environ.get("AHON_SOURCE_VOLUME", f"/Volumes/{CATALOG}/reference/source")) / SOURCE_NAME
 TARGET_TABLE = f"{CATALOG}.bronze.{SOURCE_NAME}"
 
 # LGU rows per year from the bronze profile, used to check each file after reading

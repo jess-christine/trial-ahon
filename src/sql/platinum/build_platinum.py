@@ -18,9 +18,13 @@ def main() -> None:
     from pyspark.sql import SparkSession, Window, functions as F
 
     catalog = os.environ.get("AHON_CATALOG", "ahon")
-    table = lambda schema, name: f"{catalog}.{schema}.{name}"
+
+    def table(schema: str, name: str) -> str:
+        return f"{catalog}.{schema}.{name}"
     spark = SparkSession.builder.getOrCreate()
     spark.conf.set("spark.sql.session.timeZone", "UTC")
+    run_id = str(uuid.uuid4())
+    calculated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     lgu = spark.table(table("gold", "dim_lgu")).filter(
         F.col("geographic_level").isin("City", "Municipality", "City/Municipality")
@@ -62,13 +66,27 @@ def main() -> None:
     boundary_centroids = boundary.withColumn(
         "_centroid_geojson",
         F.expr("st_asgeojson(st_centroid(try_to_geometry(boundary_geojson)))"),
-    )
+    ).withColumn("_boundary_geom", F.expr("try_to_geometry(boundary_geojson)"))
+    for coordinate, function_name in (
+        ("_xmin", "st_xmin"),
+        ("_xmax", "st_xmax"),
+        ("_ymin", "st_ymin"),
+        ("_ymax", "st_ymax"),
+    ):
+        boundary_centroids = boundary_centroids.withColumn(
+            coordinate, F.expr(f"{function_name}(_boundary_geom)")
+        )
     event_candidates = (
         event_points.crossJoin(boundary_centroids)
         .filter(
+            (F.col("longitude") >= F.col("_xmin"))
+            & (F.col("longitude") <= F.col("_xmax"))
+            & (F.col("latitude") >= F.col("_ymin"))
+            & (F.col("latitude") <= F.col("_ymax"))
+        )
+        .filter(
             F.expr(
-                "st_contains(try_to_geometry(boundary_geojson), "
-                "try_to_geometry(_event_geojson))"
+                "st_covers(_boundary_geom, try_to_geometry(_event_geojson))"
             )
         )
         .withColumn(
@@ -118,17 +136,23 @@ def main() -> None:
         )
     )
     risk_window = Window.orderBy(F.col("risk_score"), F.col("psgc_code"))
-    risk = risk.withColumn(
-        "risk_tertile",
-        F.when(F.col("risk_score").isNotNull(), F.ntile(3).over(risk_window)),
-    ).withColumn(
-        "risk_level",
-        F.when(F.col("risk_tertile") == 3, "High")
-        .when(F.col("risk_tertile") == 2, "Medium")
-        .when(F.col("risk_tertile") == 1, "Low"),
-    ).withColumn("risk_window_start", F.add_months(F.current_date(), -60))
-    .withColumn("risk_window_end", F.current_date())
-    .withColumn("population_year", F.lit(latest_population_year).cast("int"))
+    risk_tertiles = risk.filter(F.col("risk_score").isNotNull()).withColumn(
+        "risk_tertile", F.ntile(3).over(risk_window)
+    ).select("psgc_code", "risk_tertile")
+    risk = (
+        risk.join(risk_tertiles, "psgc_code", "left")
+        .withColumn(
+            "risk_level",
+            F.when(F.col("risk_tertile") == 3, "High")
+            .when(F.col("risk_tertile") == 2, "Medium")
+            .when(F.col("risk_tertile") == 1, "Low"),
+        )
+        .withColumn("risk_window_start", F.add_months(F.current_date(), -60))
+        .withColumn("risk_window_end", F.current_date())
+        .withColumn("population_year", F.lit(latest_population_year).cast("int"))
+        .withColumn("run_id", F.lit(run_id))
+        .withColumn("calculated_at", F.lit(calculated_at).cast("timestamp"))
+    )
     _write(risk, table("platinum", "risk_level_by_lgu"))
 
     cmci = spark.table(table("gold", "fact_cmci_indicator")).filter(
@@ -179,15 +203,17 @@ def main() -> None:
         )
     )
     prep_window = Window.orderBy(F.col("preparedness_score"), F.col("psgc_code"))
-    preparedness = preparedness.withColumn(
-        "preparedness_tertile",
-        F.when(F.col("preparedness_score").isNotNull(), F.ntile(3).over(prep_window)),
-    ).withColumn(
+    prep_tertiles = preparedness.filter(F.col("preparedness_score").isNotNull()).withColumn(
+        "preparedness_tertile", F.ntile(3).over(prep_window)
+    ).select("psgc_code", "preparedness_tertile")
+    preparedness = preparedness.join(prep_tertiles, "psgc_code", "left").withColumn(
         "preparedness_gap_rank",
         F.when(
             F.col("preparedness_gap").isNotNull(),
             F.rank().over(Window.orderBy(F.col("preparedness_gap").desc(), F.col("psgc_code"))),
         ),
+    ).withColumn("run_id", F.lit(run_id)).withColumn(
+        "calculated_at", F.lit(calculated_at).cast("timestamp")
     )
     _write(preparedness, table("platinum", "preparedness_gap_by_lgu"))
 
@@ -213,6 +239,8 @@ def main() -> None:
     ).select(
         F.col("year").alias("cmci_year"), "indicator_code", "pillar_name", "indicator_name",
         F.col("mean_indicator_percentile").cast("decimal(7,2)"), "priority_lgu_count", "priority_rank",
+    ).withColumn("run_id", F.lit(run_id)).withColumn(
+        "calculated_at", F.lit(calculated_at).cast("timestamp")
     )
     _write(priority_indicators, table("platinum", "cmci_preparedness_priority_by_indicator"))
 
@@ -224,8 +252,7 @@ def main() -> None:
         "preparedness_scores": preparedness.filter(F.col("preparedness_score").isNotNull()).count(),
         "highest_priority_lgus": priority_lgus.count(),
     }
-    run_id = str(uuid.uuid4())
-    checked_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    checked_at = calculated_at
     results = []
     for rule, failed_count, severity in (
         ("population_lgu_coverage", counts["active_lgus"] - counts["population_scores"], "WARNING"),

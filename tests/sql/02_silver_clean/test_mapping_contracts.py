@@ -42,8 +42,8 @@ class SilverMappingTests(TestCase):
             REPOSITORY_ROOT / "src/sql/02_silver_clean/cmci_indicator_parse.py"
         ).read_text(encoding="utf-8")
 
-        self.assertIn('BRONZE_TABLE = "ahon.bronze.cmci_raw_indicator"', parser)
-        self.assertIn('SILVER_PREFIX = "ahon.silver.cmci_"', parser)
+        self.assertIn('BRONZE_TABLE = f"{CATALOG}.bronze.cmci_raw_indicator"', parser)
+        self.assertIn('SILVER_PREFIX = f"{CATALOG}.silver.cmci_"', parser)
         self.assertIn(
             "for pillar_name, indicators in INDICATORS_BY_PILLAR.items()", parser
         )

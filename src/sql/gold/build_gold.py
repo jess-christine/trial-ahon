@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -14,11 +15,18 @@ sys.path.insert(0, str(CMCI_CODE_DIR))
 
 from cmci_common import INDICATORS_BY_PILLAR  # noqa: E402
 
-LGU_MASTER = "ahon.reference.lgu_master"
-PSGC_SILVER = "ahon.silver.psgc_clean"
-BLGF_SILVER = "ahon.silver.blgf_ldrrmf_annual_lgu_clean"
-PHIVOLCS_SILVER = "ahon.silver.philvolcs_earthquake_data_clean"
-CMCI_SILVER_PREFIX = "ahon.silver.cmci_"
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+
+
+def _table(name: str) -> str:
+    return name.replace("ahon.", f"{CATALOG}.", 1)
+
+
+LGU_MASTER = _table("ahon.reference.lgu_master")
+PSGC_SILVER = _table("ahon.silver.psgc_clean")
+BLGF_SILVER = _table("ahon.silver.blgf_ldrrmf_annual_lgu_clean")
+PHIVOLCS_SILVER = _table("ahon.silver.philvolcs_earthquake_data_clean")
+CMCI_SILVER_PREFIX = _table("ahon.silver.cmci_")
 
 
 def indicator_records() -> list[tuple[str, str, str]]:
@@ -138,9 +146,9 @@ def build_dim_lgu(spark: SparkSession) -> None:
         .alias("barangay_code"),
     )
     assert_unique(frame, ("psgc_code",), "dim_lgu source")
-    replace_snapshot(spark, "ahon.gold.dim_lgu", frame)
+    replace_snapshot(spark, _table("ahon.gold.dim_lgu"), frame)
     print(
-        "ahon.gold.dim_lgu: "
+        f"{_table('ahon.gold.dim_lgu')}: "
         f"{frame.count()} active LGUs; "
         f"{missing_hierarchy} have missing hierarchy codes, "
         f"{conflict_count} have conflicting PSGC hierarchy versions, "
@@ -161,18 +169,18 @@ def build_dim_cmci_indicator(spark: SparkSession) -> None:
     )
     frame = spark.createDataFrame(records, schema)
     assert_unique(frame, ("indicator_code",), "CMCI indicator configuration")
-    replace_snapshot(spark, "ahon.gold.dim_cmci_indicator", frame)
-    print(f"ahon.gold.dim_cmci_indicator: {len(records)} approved indicators")
+    replace_snapshot(spark, _table("ahon.gold.dim_cmci_indicator"), frame)
+    print(f"{_table('ahon.gold.dim_cmci_indicator')}: {len(records)} approved indicators")
 
 
 def build_fact_cmci_indicator(spark: SparkSession) -> None:
     from pyspark.sql import functions as F
     from pyspark.sql.types import DecimalType, IntegerType
 
-    dimension = spark.table("ahon.gold.dim_lgu").select(
+    dimension = spark.table(_table("ahon.gold.dim_lgu")).select(
         "psgc_code", "geographic_level"
     )
-    indicators = spark.table("ahon.gold.dim_cmci_indicator").select(
+    indicators = spark.table(_table("ahon.gold.dim_cmci_indicator")).select(
         "indicator_code"
     )
     frames = []
@@ -223,15 +231,15 @@ def build_fact_cmci_indicator(spark: SparkSession) -> None:
         ("psgc_code", "year", "indicator_code"),
         "fact_cmci_indicator",
     )
-    replace_snapshot(spark, "ahon.gold.fact_cmci_indicator", fact)
-    print(f"ahon.gold.fact_cmci_indicator: {fact.count()} LGU-year-indicator rows")
+    replace_snapshot(spark, _table("ahon.gold.fact_cmci_indicator"), fact)
+    print(f"{_table('ahon.gold.fact_cmci_indicator')}: {fact.count()} LGU-year-indicator rows")
 
 
 def build_fact_population(spark: SparkSession) -> None:
     """Load PSA's city/municipality grain without allocating other levels."""
     from pyspark.sql import functions as F
 
-    population = spark.table("ahon.silver.psa_population_clean").filter(
+    population = spark.table(_table("ahon.silver.psa_population_clean")).filter(
         F.col("geographic_level") == "City/Municipality"
     )
     invalid_key_count = population.filter(
@@ -293,10 +301,10 @@ def build_fact_population(spark: SparkSession) -> None:
     assert_unique(
         fact, ("geographic_location", "year"), "fact_population source"
     )
-    replace_snapshot(spark, "ahon.gold.fact_population", fact)
+    replace_snapshot(spark, _table("ahon.gold.fact_population"), fact)
     unmatched = fact.filter(F.col("psgc_code").isNull()).count()
     print(
-        f"ahon.gold.fact_population: {fact.count()} city/municipality rows; "
+        f"{_table('ahon.gold.fact_population')}: {fact.count()} city/municipality rows; "
         f"{unmatched} unmatched or ambiguous exact LGU/province names remain null"
     )
 
@@ -382,14 +390,12 @@ def build_fact_ldrrmf(spark: SparkSession) -> None:
         .when(F.col("candidate_count") > 1, F.lit("AMBIGUOUS"))
         .otherwise(F.lit("UNMATCHED"))
         .alias("match_status"),
-        F.when(F.col("candidate_count") == 1, F.lit(1.0))
-        .cast(DecimalType(5, 4))
-        .alias("match_confidence"),
+        F.lit(None).cast(DecimalType(5, 4)).alias("match_confidence"),
     )
     assert_unique(fact, ("ldrrmf_fact_key",), "fact_ldrrmf source")
-    replace_snapshot(spark, "ahon.gold.fact_ldrrmf", fact)
+    replace_snapshot(spark, _table("ahon.gold.fact_ldrrmf"), fact)
     print(
-        f"ahon.gold.fact_ldrrmf: {fact.count()} city/municipality rows; "
+        f"{_table('ahon.gold.fact_ldrrmf')}: {fact.count()} city/municipality rows; "
         f"{fact.filter(F.col('match_status') == 'MATCHED').count()} exact matches, "
         f"{fact.filter(F.col('match_status') != 'MATCHED').count()} unmatched/ambiguous; "
         f"excluded types={excluded_by_type}; "
@@ -404,15 +410,20 @@ def build_fact_earthquake_event(spark: SparkSession) -> None:
 
     source = spark.table(PHIVOLCS_SILVER)
     boundary = (
-        spark.table("ahon.silver.lgu_boundary_clean")
+        spark.table(_table("ahon.silver.lgu_boundary_clean"))
         .join(
-            spark.table("ahon.gold.dim_lgu")
+            spark.table(_table("ahon.gold.dim_lgu"))
             .filter(F.col("geographic_level").isin("City", "Municipality", "City/Municipality"))
             .select("psgc_code"),
             "psgc_code",
             "inner",
         )
         .select("psgc_code", "boundary_geojson")
+        .withColumn("_boundary_geom", F.expr("try_to_geometry(boundary_geojson)"))
+        .withColumn("_xmin", F.expr("st_xmin(_boundary_geom)"))
+        .withColumn("_xmax", F.expr("st_xmax(_boundary_geom)"))
+        .withColumn("_ymin", F.expr("st_ymin(_boundary_geom)"))
+        .withColumn("_ymax", F.expr("st_ymax(_boundary_geom)"))
     )
     event_json = F.concat(
         F.lit('{"type":"Point","coordinates":['),
@@ -422,11 +433,15 @@ def build_fact_earthquake_event(spark: SparkSession) -> None:
     candidates = (
         source.select("id", "longitude", "latitude")
         .withColumn("_event_geojson", event_json)
+        .withColumn("_event_geom", F.expr("try_to_geometry(_event_geojson)"))
         .crossJoin(boundary)
-        .filter(F.expr(
-            "st_contains(try_to_geometry(boundary_geojson), "
-            "try_to_geometry(_event_geojson))"
-        ))
+        .filter(
+            (F.col("longitude") >= F.col("_xmin"))
+            & (F.col("longitude") <= F.col("_xmax"))
+            & (F.col("latitude") >= F.col("_ymin"))
+            & (F.col("latitude") <= F.col("_ymax"))
+        )
+        .filter(F.expr("st_covers(_boundary_geom, _event_geom)"))
         .groupBy("id")
         .agg(
             F.countDistinct("psgc_code").alias("match_count"),
@@ -449,14 +464,12 @@ def build_fact_earthquake_event(spark: SparkSession) -> None:
         .when(F.col("match_count") > 1, F.lit("AMBIGUOUS"))
         .otherwise(F.lit("UNMATCHED"))
         .alias("match_status"),
-        F.when(F.col("match_count") == 1, F.lit(1.0))
-        .cast(DecimalType(5, 4))
-        .alias("match_confidence"),
+        F.lit(None).cast(DecimalType(5, 4)).alias("match_confidence"),
     )
     assert_unique(fact, ("earthquake_fact_key",), "fact_earthquake_event source")
-    replace_snapshot(spark, "ahon.gold.fact_earthquake_event", fact)
+    replace_snapshot(spark, _table("ahon.gold.fact_earthquake_event"), fact)
     print(
-        f"ahon.gold.fact_earthquake_event: {fact.count()} valid events; "
+        f"{_table('ahon.gold.fact_earthquake_event')}: {fact.count()} valid events; "
         f"{fact.filter(F.col('match_status') == 'MATCHED').count()} spatially matched, "
         f"{fact.filter(F.col('match_status') != 'MATCHED').count()} unmatched/ambiguous"
     )
@@ -467,7 +480,7 @@ def main() -> None:
 
     spark = SparkSession.builder.getOrCreate()
     spark.conf.set("spark.sql.session.timeZone", "UTC")
-    spark.sql("CREATE SCHEMA IF NOT EXISTS ahon.gold")
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.gold")
     build_dim_lgu(spark)
     build_dim_cmci_indicator(spark)
     build_fact_cmci_indicator(spark)

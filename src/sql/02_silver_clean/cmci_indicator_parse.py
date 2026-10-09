@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import os
 from pathlib import Path
 
 from delta.tables import DeltaTable
@@ -14,9 +15,10 @@ sys.path.insert(0, str(CMCI_CODE_DIR))
 
 from cmci_common import INDICATORS_BY_PILLAR  # noqa: E402
 
-BRONZE_TABLE = "ahon.bronze.cmci_raw_indicator"
-BATCH_TABLE = "ahon.bronze.cmci_raw_indicator_batch_html"
-SILVER_PREFIX = "ahon.silver.cmci_"
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+BRONZE_TABLE = f"{CATALOG}.bronze.cmci_raw_indicator"
+BATCH_TABLE = f"{CATALOG}.bronze.cmci_raw_indicator_batch_html"
+SILVER_PREFIX = f"{CATALOG}.silver.cmci_"
 KEY_COLUMNS = ("psgc_code", "year")
 
 

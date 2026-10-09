@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +16,8 @@ import requests
 API_URL = "https://openstat.psa.gov.ph/PXWeb/api/v1/en/DB/1A/PO_2024/0241A6DPUP1.px"
 
 # Destination: the source volume, one folder per dataset (naming standard)
-VOLUME_ROOT = Path("/Volumes/ahon/reference/source")
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+VOLUME_ROOT = Path(os.environ.get("AHON_SOURCE_VOLUME", f"/Volumes/{CATALOG}/reference/source"))
 DATASET_NAME = "psa_population"
 TARGET_PATH = VOLUME_ROOT / DATASET_NAME / "2024_population_urban.csv"
 

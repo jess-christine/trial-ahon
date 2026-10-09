@@ -10,15 +10,15 @@
 | Column | Type | Description | Notes |
 |---|---|---|---|
 | `earthquake_fact_key` | bigint | Generated event observation key | Derived from Silver; duplicate keys block loading |
-| `psgc_code` | varchar(10) | Matched LGU code | `NULL` until geographic matching is approved |
+| `psgc_code` | varchar(10) | Matched LGU code | Spatially matched only when exactly one active city/municipality approximate polygon covers the event coordinates; otherwise `NULL` |
 | `location` | varchar(500) | PHIVOLCS free-text location | No geocoding or inferred LGU assignment |
 | `timestamp` | timestamp | Local event time as published | Source has no timezone; timezone semantics remain open |
 | `depth` | decimal(10,2) | Event depth | Kilometers |
 | `magnitude` | decimal(4,2) | Event magnitude | Source scale retained |
 | `longitude` | decimal(10,7) | Event longitude | Decimal degrees |
 | `latitude` | decimal(10,7) | Event latitude | Decimal degrees |
-| `match_status` | psgc_match_status | PSGC matching state | Currently `UNMATCHED`; physical Databricks type is `STRING` |
-| `match_confidence` | decimal(5,4) | Matching confidence | `NULL` because no approved match was attempted |
+| `match_status` | psgc_match_status | PSGC matching state | `MATCHED`, `AMBIGUOUS`, or `UNMATCHED`; physical Databricks type is `STRING` |
+| `match_confidence` | decimal(5,4) | Matching confidence | `NULL`; confidence is not calibrated for approximate boundaries |
 
 ## Quality and operations
 
