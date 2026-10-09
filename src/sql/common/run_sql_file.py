@@ -68,8 +68,42 @@ def render_sql(sql_text: str, catalog: str, source_volume: str) -> str:
     """Apply bundle-selected catalog and source-volume settings to SQL."""
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", catalog):
         raise ValueError("AHON_CATALOG must be a simple SQL identifier")
-    return re.sub(r"\bahon\.", f"{catalog}.", sql_text).replace(
+    rendered = re.sub(r"\bahon\.", f"{catalog}.", sql_text)
+    rendered = re.sub(
+        r"(?i)(\b(?:CREATE\s+CATALOG\s+IF\s+NOT\s+EXISTS|SHOW\s+SCHEMAS\s+IN)\s+)ahon\b",
+        rf"\g<1>{catalog}",
+        rendered,
+    )
+    return rendered.replace(
         "/Volumes/ahon/reference/source", source_volume.rstrip("/")
+    )
+
+
+def resolve_sql_path(
+    sql_file: str,
+    repository_root: str | None,
+    script_file: str | None,
+    working_directory: str | None = None,
+) -> Path:
+    """Resolve task SQL paths when Databricks does not define ``__file__``."""
+    path = Path(sql_file)
+    if path.is_absolute():
+        return path
+    candidates: list[Path] = []
+    if repository_root:
+        candidates.append(Path(repository_root) / path)
+    if script_file:
+        candidates.extend(
+            parent / path for parent in Path(script_file).resolve().parents
+        )
+    if working_directory:
+        candidates.append(Path(working_directory) / path)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    raise RuntimeError(
+        "Could not locate SQL file. Checked: "
+        + ", ".join(str(candidate) for candidate in candidates)
     )
 
 
@@ -81,9 +115,12 @@ def main() -> None:
     source_volume = os.environ.get(
         "AHON_SOURCE_VOLUME", f"/Volumes/{catalog}/reference/source"
     )
-    sql_path = Path(args.sql_file)
-    if not sql_path.is_absolute():
-        sql_path = Path(__file__).resolve().parents[3] / sql_path
+    sql_path = resolve_sql_path(
+        args.sql_file,
+        os.environ.get("AHON_REPOSITORY_ROOT"),
+        globals().get("__file__") or globals().get("filename"),
+        os.getcwd(),
+    )
     sql_text = sql_path.read_text(encoding="utf-8")
     sql_text = render_sql(sql_text, catalog, source_volume)
 

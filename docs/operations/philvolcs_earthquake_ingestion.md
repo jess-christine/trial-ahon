@@ -54,11 +54,13 @@ The combined file path must match the path configured in the bronze SQL. If you 
 
 ## What the scraper does
 
-1. Requests each month's PHIVOLCS monthly page for every year in the configured range. If a monthly request returns HTTP 404, it tries the PHIVOLCS main page as a fallback.
+1. Requests each month's PHIVOLCS monthly page for every year in the configured range. It tries the PHIVOLCS main page only when the current UTC month's page returns HTTP 404; missing earlier months remain reported as gaps.
 2. Parses the first suitable HTML table, labels its columns, and removes recognized page headers, summaries, and empty rows.
 3. Adds `Month` and `Year`, then writes each year's CSV.
 4. Concatenates the yearly results and writes the combined CSV.
 5. Prints per-month progress and year/total row counts.
+
+The summary ranks strongest events using numeric magnitude values without changing the source rows. Missing or malformed magnitude values remain in the landed CSV and are counted as omitted from the summary ranking only.
 
 The scraper waits briefly between monthly requests. A failed month is reported in console output; the process may still produce files from months that succeeded. For the current year, the first failed month causes the remaining months to be skipped, assuming they have not been published yet. If no year returns data, no combined file is written.
 

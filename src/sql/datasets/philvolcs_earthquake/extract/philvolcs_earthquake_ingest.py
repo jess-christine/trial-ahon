@@ -1,3 +1,4 @@
+import math
 import os
 import time
 from datetime import datetime, timezone
@@ -84,10 +85,17 @@ def scrape_current_month_from_main_page():
         return None
 
 
+def month_is_current(year, month_name, now=None):
+    """Identify the current UTC month for the PHIVOLCS main-page fallback."""
+    current_time = now or datetime.now(timezone.utc)
+    return year == current_time.year and month_name == current_time.strftime("%B")
+
+
 def scrape_phivolcs_data_from_html(year, month_name):
     """
     Fetches earthquake data by reading the HTML table from the PHIVOLCS monthly page.
-    If the monthly page returns 404, it will try scraping from the main page.
+    The main-page fallback is limited to the current UTC month to avoid relabeling
+    current observations as data for an earlier month.
     """
     url = (
         f"{SOURCE_BASE_URL}/EQLatest-Monthly/"
@@ -154,8 +162,11 @@ def scrape_phivolcs_data_from_html(year, month_name):
 
     except requests.exceptions.HTTPError as errh:
         if errh.response.status_code == 404:
-            print("✗ HTTP 404 (trying main page)")
-            return scrape_current_month_from_main_page()
+            if month_is_current(year, month_name):
+                print("✗ HTTP 404 (trying main page)")
+                return scrape_current_month_from_main_page()
+            print("✗ HTTP 404")
+            return None
         else:
             print(f"✗ HTTP {errh.response.status_code}")
             return None
@@ -193,13 +204,12 @@ def scrape_year_data(year, output_dir="data"):
             successful_months.append(month_name)
             
             # Check if this data came from the main page (current month indicator)
-            if year == datetime.now(timezone.utc).year and month_name == datetime.now(timezone.utc).strftime("%B"):
+            if month_is_current(year, month_name):
                 current_month_found = True
                 print(f"  ℹ️  Current month detected: {month_name} {year}")
         else:
             failed_months.append(month_name)
-            # If we get a failure on the current year, it might be the current month
-            if year == datetime.now(timezone.utc).year and not current_month_found:
+            if month_is_current(year, month_name):
                 current_month_found = True
         
         # Be polite to the server
@@ -303,13 +313,36 @@ def display_statistics(df):
     for year, count in yearly_counts.items():
         print(f"  • {year}: {count:,} earthquakes")
     
-    # Top 10 strongest earthquakes based on the ingested file
+    ranked_magnitudes, invalid_magnitude_count = rank_magnitudes(df['Magnitude'])
+    print(
+        "Rows with missing or malformed magnitude omitted from ranking: "
+        f"{invalid_magnitude_count:,}"
+    )
+
+    # Keep source values untouched; numeric conversion is only for this summary.
     print("\n💥 Top 10 Strongest Earthquakes:")
-    top_10 = df.nlargest(10, 'Magnitude')[['Date-Time', 'Magnitude', 'Location', 'Year']]
-    for idx, row in top_10.iterrows():
-        print(f"  • Mag {row['Magnitude']} - {row['Location'][:50]} ({row['Year']})")
+    for magnitude, idx in ranked_magnitudes[:10]:
+        row = df.loc[idx]
+        print(f"  • Mag {magnitude:g} - {row['Location'][:50]} ({row['Year']})")
     
     print(f"\n{'='*70}\n")
+
+
+def rank_magnitudes(magnitudes):
+    """Return numeric magnitude/index pairs and count values not rankable."""
+    ranked = []
+    invalid_count = 0
+    for index, value in magnitudes.items():
+        try:
+            magnitude = float(value)
+        except (TypeError, ValueError):
+            invalid_count += 1
+            continue
+        if not math.isfinite(magnitude):
+            invalid_count += 1
+            continue
+        ranked.append((magnitude, index))
+    return sorted(ranked, key=lambda item: item[0], reverse=True), invalid_count
 
 
 if __name__ == "__main__":

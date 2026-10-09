@@ -7,7 +7,7 @@ from unittest import TestCase
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPOSITORY_ROOT / "src" / "sql" / "common"))
 
-from run_sql_file import render_sql, split_statements  # noqa: E402
+from run_sql_file import render_sql, resolve_sql_path, split_statements  # noqa: E402
 
 
 class SqlFileRunnerTests(TestCase):
@@ -27,9 +27,37 @@ class SqlFileRunnerTests(TestCase):
 
     def test_render_sql_uses_configured_catalog_and_source_volume(self) -> None:
         rendered = render_sql(
-            "select * from ahon.bronze.events; read_files('/Volumes/ahon/reference/source/events.csv')",
+            "CREATE CATALOG IF NOT EXISTS ahon; SHOW SCHEMAS IN ahon; "
+            "select * from ahon.bronze.events; "
+            "read_files('/Volumes/ahon/reference/source/events.csv')",
             "ahon_test",
             "/Volumes/custom/source/",
         )
+        self.assertIn("CREATE CATALOG IF NOT EXISTS ahon_test", rendered)
+        self.assertIn("SHOW SCHEMAS IN ahon_test", rendered)
         self.assertIn("ahon_test.bronze.events", rendered)
         self.assertIn("/Volumes/custom/source/events.csv", rendered)
+
+    def test_sql_paths_resolve_from_bundle_root_without_file(self) -> None:
+        path = resolve_sql_path(
+            "src/sql/00_setup/00_catalog_schema_setup.sql",
+            str(REPOSITORY_ROOT),
+            None,
+        )
+
+        self.assertEqual(
+            path,
+            REPOSITORY_ROOT / "src/sql/00_setup/00_catalog_schema_setup.sql",
+        )
+
+    def test_sql_paths_fall_back_to_workspace_script_location(self) -> None:
+        path = resolve_sql_path(
+            "src/sql/00_setup/00_catalog_schema_setup.sql",
+            "/missing/synced/files",
+            str(REPOSITORY_ROOT / "src/sql/common/run_sql_file.py"),
+        )
+
+        self.assertEqual(
+            path,
+            REPOSITORY_ROOT / "src/sql/00_setup/00_catalog_schema_setup.sql",
+        )
