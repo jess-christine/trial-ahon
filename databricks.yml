@@ -44,9 +44,19 @@ targets:
       catalog: ahon_dev
       source_volume_path: /Volumes/ahon_dev/reference/source
       boundary_geojson_path: /Volumes/ahon_dev/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
+      node_type_id: m5d.large
+      boundary_code_property: PSGC
+      psgc_secret_scope: ahon
+      psgc_secret_key: psgc_api_token
   prod:
     mode: production
+    workspace:
+      root_path: /Workspace/Users/jessc.manuel@gmail.com/.bundle/${bundle.name}/${bundle.target}
     variables:
       catalog: ahon
       source_volume_path: /Volumes/ahon/reference/source
       boundary_geojson_path: /Volumes/ahon/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
+      node_type_id: m5d.large
+      boundary_code_property: PSGC
+      psgc_secret_scope: ahon
+      psgc_secret_key: psgc_api_token
