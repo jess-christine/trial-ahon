@@ -11,10 +11,6 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          environment_key: default
-=======
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -27,13 +23,8 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: setup_catalog}]
-          environment_key: default
-=======
           depends_on:
             - task_key: setup_catalog
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -46,13 +37,8 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: setup_bronze}]
-          environment_key: default
-=======
           depends_on:
             - task_key: setup_bronze
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -65,13 +51,8 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: setup_monitoring}]
-          environment_key: default
-=======
           depends_on:
             - task_key: setup_monitoring
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -84,13 +65,8 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: setup_reference_and_gold}]
-          environment_key: default
-=======
           depends_on:
             - task_key: setup_reference_and_gold
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -103,13 +79,8 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: setup_gold_tables}]
-          environment_key: default
-=======
           depends_on:
             - task_key: setup_gold_tables
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -122,38 +93,20 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: setup_catalog}]
-          environment_key: default
-          notebook_task:
-            notebook_path: ../src/sql/datasets/psa_population/extract/extract_psa_population.py
-            source: WORKSPACE
-
-=======
           depends_on:
             - task_key: setup_catalog
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
               - --python-file
-              - "src/sql/datasets/psa_population/extract/extract_psa_populati\
-                on.py"
+              - src/sql/datasets/psa_population/extract/extract_psa_population.py
               - --config-json
               - ${var.runtime_config}
           environment_key: default
->>>>>>> Stashed changes
         - task_key: bronze_psa
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: extract_psa}, {task_key: setup_bronze}]
-          environment_key: default
-          notebook_task:
-            notebook_path: ../src/sql/datasets/psa_population/bronze/load_psa_population.py
-            source: WORKSPACE
-
-=======
           depends_on:
             - task_key: extract_psa
             - task_key: setup_bronze
@@ -165,18 +118,12 @@ resources:
               - --config-json
               - ${var.runtime_config}
           environment_key: default
->>>>>>> Stashed changes
         - task_key: extract_blgf
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: setup_catalog}]
-          environment_key: default
-=======
           depends_on:
             - task_key: setup_catalog
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -190,14 +137,9 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: extract_blgf}, {task_key: setup_bronze}]
-          environment_key: default
-=======
           depends_on:
             - task_key: extract_blgf
             - task_key: setup_bronze
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -211,13 +153,8 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: setup_catalog}]
-          environment_key: default
-=======
           depends_on:
             - task_key: setup_catalog
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -231,14 +168,9 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: extract_phivolcs}, {task_key: setup_bronze}]
-          environment_key: default
-=======
           depends_on:
             - task_key: extract_phivolcs
             - task_key: setup_bronze
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -252,13 +184,9 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: setup_bronze}]
-          environment_key: default
-=======
           depends_on:
             - task_key: setup_bronze
->>>>>>> Stashed changes
+          environment_key: default
           notebook_task:
             notebook_path: ../src/sql/datasets/psgc/psgc_api.py
             source: WORKSPACE
@@ -428,21 +356,11 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on:
-<<<<<<< Updated upstream
-            - {task_key: silver_blgf}
-            - {task_key: silver_phivolcs}
-            - {task_key: silver_psa}
-            - {task_key: silver_psgc}
-            - {task_key: cmci_silver_parse}
-            - {task_key: load_geoportal_boundaries}
-          environment_key: default
-=======
             - task_key: silver_blgf
             - task_key: silver_phivolcs
             - task_key: silver_psa
             - task_key: silver_psgc
             - task_key: cmci_silver_parse
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:
@@ -469,13 +387,8 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-<<<<<<< Updated upstream
-          depends_on: [{task_key: validate_silver_gold}]
-          environment_key: default
-=======
           depends_on:
             - task_key: validate_silver_gold
->>>>>>> Stashed changes
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters:

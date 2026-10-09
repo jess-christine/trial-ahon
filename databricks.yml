@@ -9,8 +9,6 @@ sync:
     - resources/**
   exclude:
     - resources/source/**
-    - '**/__pycache__/**'
-    - '**/*.pyc'
 variables:
   catalog:
     description: Unity Catalog environment for this deployment.
@@ -48,6 +46,8 @@ variables:
   boundary_code_property:
     description: GeoJSON properties field containing the official 10-digit PSGC
       code.
+  node_type_id:
+    description: AWS node type for non-serverless compute (unused with serverless environments).
   psgc_secret_scope:
     description: Existing Databricks secret scope containing the PSGC API token.
   psgc_secret_key:
@@ -96,16 +96,11 @@ targets:
     variables:
       catalog: ahon_dev
       source_volume_path: /Volumes/ahon_dev/reference/source
-<<<<<<< Updated upstream
       boundary_geojson_path: /Volumes/ahon_dev/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
       node_type_id: m5d.large
       boundary_code_property: PSGC
       psgc_secret_scope: ahon
       psgc_secret_key: psgc_api_token
-=======
-      boundary_geojson_path: "/Volumes/ahon_dev/reference/source/lgu_boundari\
-        es/geoportal_city_municipality.geojson"
->>>>>>> Stashed changes
   prod:
     mode: production
     workspace:
@@ -113,13 +108,8 @@ targets:
     variables:
       catalog: ahon
       source_volume_path: /Volumes/ahon/reference/source
-<<<<<<< Updated upstream
       boundary_geojson_path: /Volumes/ahon/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
       node_type_id: m5d.large
       boundary_code_property: PSGC
       psgc_secret_scope: ahon
       psgc_secret_key: psgc_api_token
-=======
-      boundary_geojson_path: "/Volumes/ahon/reference/source/lgu_boundaries/g\
-        eoportal_city_municipality.geojson"
->>>>>>> Stashed changes

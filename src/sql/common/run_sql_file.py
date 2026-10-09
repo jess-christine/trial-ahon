@@ -6,12 +6,8 @@ import argparse
 import json
 import os
 import re
-<<<<<<< Updated upstream
-import inspect
-=======
 import runpy
 import sys
->>>>>>> Stashed changes
 from pathlib import Path
 
 
@@ -150,16 +146,6 @@ def main() -> None:
     args = parser.parse_args()
     os.environ.update(parse_task_config(args.config_json))
     catalog = os.environ.get("AHON_CATALOG", "ahon")
-<<<<<<< Updated upstream
-    source_volume = os.environ.get(
-        "AHON_SOURCE_VOLUME", f"/Volumes/{catalog}/reference/source"
-    )
-    sql_path = Path(args.sql_file)
-    if not sql_path.is_absolute():
-        sql_path = Path(inspect.currentframe().f_code.co_filename).resolve().parents[3] / sql_path
-    sql_text = sql_path.read_text(encoding="utf-8")
-    sql_text = render_sql(sql_text, catalog, source_volume)
-=======
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", catalog):
         raise ValueError("AHON_CATALOG must be a simple SQL identifier")
     path = resolve_sql_path(
@@ -175,7 +161,6 @@ def main() -> None:
         "AHON_SOURCE_VOLUME", f"/Volumes/{catalog}/reference/source"
     )
     sql_text = render_sql(path.read_text(encoding="utf-8"), catalog, source_volume)
->>>>>>> Stashed changes
 
     from pyspark.sql import SparkSession
 
