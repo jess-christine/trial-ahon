@@ -30,3 +30,5 @@ Four Platinum snapshots are built on each successful run and include run identif
 ## Open
 
 GeoPortal boundary file access and its exact PSGC property name must be supplied/configured. PHIVOLCS source timestamps do not include a timezone; the current jobs use UTC Spark sessions. Confirm whether source wall time is UTC or Asia/Manila before interpreting the five-year cutoff. Validate observed coverage, match ambiguity, event window, and metric distributions in Databricks before communicating outputs.
+
+Decision [0008](0008-supplied-boundary-reconciliation.md) records the subsequently owner-supplied BetterGov/PSA/NAMRIA boundary artifact, exact identifier reconciliation, and partial mapping coverage; experimental formulas are unchanged.

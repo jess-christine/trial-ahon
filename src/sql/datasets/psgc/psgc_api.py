@@ -7,6 +7,7 @@
 # --- Parameters ---
 # Pass secret identifiers as job parameters; the token itself stays in the
 # workspace secret store and is never written to notebook parameters or logs.
+dbutils.widgets.text("ahon_catalog", "ahon", "Target catalog")
 dbutils.widgets.text("psgc_secret_scope", "", "PSGC token secret scope")
 dbutils.widgets.text("psgc_secret_key", "", "PSGC token secret key")
 dbutils.widgets.text("psgc_api_base_url", "", "PSGC API base URL")
@@ -25,7 +26,7 @@ PERIODS = [
     for period in dbutils.widgets.get("psgc_periods").split(",")
     if period.strip()
 ]
-CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+CATALOG = dbutils.widgets.get("ahon_catalog").strip()
 BRONZE_TABLE = f"{CATALOG}.bronze.psgc"
 
 secret_scope = dbutils.widgets.get("psgc_secret_scope").strip()

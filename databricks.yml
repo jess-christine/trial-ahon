@@ -1,36 +1,53 @@
+---
 bundle:
   name: ahon-pipeline
-
 include:
   - resources/*.yml
-
 sync:
   include:
     - src/**
     - resources/**
   exclude:
     - resources/source/**
-
+    - '**/__pycache__/**'
+    - '**/*.pyc'
 variables:
   catalog:
     description: Unity Catalog environment for this deployment.
     default: ahon_dev
-  spark_version:
-    description: Databricks Runtime with native spatial SQL support.
-    default: 17.1.x-scala2.13
-  node_type_id:
-    description: Cloud-specific node type available in the target workspace.
-  num_workers:
-    description: Small job-cluster size; increase only when measured volume requires it.
-    default: 1
+  environment_version:
+    description: Serverless environment version supported by this workspace.
+    default: '2'
+  runtime_config:
+    description: Non-secret task settings for Serverless execution.
+    default: |-
+      {
+        "AHON_CATALOG": "${var.catalog}",
+        "AHON_REPOSITORY_ROOT": "${workspace.file_path}",
+        "AHON_SOURCE_VOLUME": "${var.source_volume_path}",
+        "AHON_BOUNDARY_GEOJSON_PATH": "${var.boundary_geojson_path}",
+        "AHON_BOUNDARY_CODE_PROPERTY": "${var.boundary_code_property}",
+        "AHON_PSA_API_URL": "${var.psa_api_url}",
+        "AHON_PSA_CENSUS_YEAR": "${var.psa_census_year}",
+        "AHON_PSA_CSV_ENCODING": "${var.psa_csv_encoding}",
+        "AHON_PHIVOLCS_BASE_URL": "${var.phivolcs_base_url}",
+        "AHON_PHIVOLCS_YEARS_BACK": "${var.phivolcs_years_back}",
+        "AHON_BLGF_DATASET_REPO_ID": "${var.blgf_dataset_repo_id}",
+        "AHON_BLGF_DATASET_FOLDER": "${var.blgf_dataset_folder}",
+        "AHON_CMCI_PORTAL_URL": "${var.cmci_portal_url}",
+        "AHON_CMCI_PROCESS_URL": "${var.cmci_process_url}",
+        "AHON_CMCI_YEARS": "${var.cmci_years}"
+      }
   source_volume_path:
-    description: Root of the reference.source volume used for landed source files.
+    description: Landing volume for source files.
     default: /Volumes/ahon_dev/reference/source
   boundary_geojson_path:
-    description: GeoPortal approximate city/municipality GeoJSON in the source volume.
-    default: /Volumes/ahon_dev/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
+    description: Approved approximate city/municipality GeoJSON.
+    default: "/Volumes/ahon_dev/reference/source/lgu_boundaries/geoportal_cit\
+      y_municipality.geojson"
   boundary_code_property:
-    description: GeoJSON properties field containing the official 10-digit PSGC code.
+    description: GeoJSON properties field containing the official 10-digit PSGC
+      code.
   psgc_secret_scope:
     description: Existing Databricks secret scope containing the PSGC API token.
   psgc_secret_key:
@@ -43,18 +60,22 @@ variables:
     default: Q2_2024,April_2024,Q4_2023,Q2_2021
   psa_api_url:
     description: PSA PXWeb population table endpoint.
-    default: https://openstat.psa.gov.ph/PXWeb/api/v1/en/DB/1A/PO_2024/0241A6DPUP1.px
+    default: "https://openstat.psa.gov.ph/PXWeb/api/v1/en/DB/1A/PO_2024/0241A\
+      6DPUP1.px"
   psa_census_year:
     description: Census year represented by the configured PSA endpoint.
-    default: "2024"
+    default: '2024'
+  psa_csv_encoding:
+    description: Encoding declared by the PSA CSV HTTP response.
+    default: cp1252
   phivolcs_base_url:
     description: PHIVOLCS earthquake listing base URL.
     default: https://earthquake.phivolcs.dost.gov.ph
   phivolcs_years_back:
-    description: Number of annual PHIVOLCS listings to request, including current year.
-    default: "8"
+    description: PHIVOLCS annual listings, including the current year.
+    default: '8'
   blgf_dataset_repo_id:
-    description: Hugging Face dataset repository containing BLGF LDRRMF workbooks.
+    description: Hugging Face repository containing BLGF workbooks.
     default: Jess-Christine/Project-AHON
   blgf_dataset_folder:
     description: Repository folder containing BLGF workbooks.
@@ -67,8 +88,7 @@ variables:
     default: https://cmci.dti.gov.ph/data-portal-process.php
   cmci_years:
     description: Comma-separated CMCI reporting years to extract and profile.
-    default: "2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024"
-
+    default: 2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024
 targets:
   dev:
     mode: development
@@ -76,11 +96,16 @@ targets:
     variables:
       catalog: ahon_dev
       source_volume_path: /Volumes/ahon_dev/reference/source
+<<<<<<< Updated upstream
       boundary_geojson_path: /Volumes/ahon_dev/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
       node_type_id: m5d.large
       boundary_code_property: PSGC
       psgc_secret_scope: ahon
       psgc_secret_key: psgc_api_token
+=======
+      boundary_geojson_path: "/Volumes/ahon_dev/reference/source/lgu_boundari\
+        es/geoportal_city_municipality.geojson"
+>>>>>>> Stashed changes
   prod:
     mode: production
     workspace:
@@ -88,8 +113,13 @@ targets:
     variables:
       catalog: ahon
       source_volume_path: /Volumes/ahon/reference/source
+<<<<<<< Updated upstream
       boundary_geojson_path: /Volumes/ahon/reference/source/lgu_boundaries/geoportal_city_municipality.geojson
       node_type_id: m5d.large
       boundary_code_property: PSGC
       psgc_secret_scope: ahon
       psgc_secret_key: psgc_api_token
+=======
+      boundary_geojson_path: "/Volumes/ahon/reference/source/lgu_boundaries/g\
+        eoportal_city_municipality.geojson"
+>>>>>>> Stashed changes

@@ -2,17 +2,17 @@ import re
 import unicodedata
 
 from bs4 import BeautifulSoup
+from cmci_common import (
+    PORTAL_URL,
+    REQUEST_TIMEOUT_SECONDS,
+    create_http_session,
+)
 from delta.tables import DeltaTable
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
     StringType,
     StructField,
     StructType,
-)
-from cmci_common import (
-    PORTAL_URL,
-    REQUEST_TIMEOUT_SECONDS,
-    create_http_session,
 )
 
 # ------------------------------------------------------------------

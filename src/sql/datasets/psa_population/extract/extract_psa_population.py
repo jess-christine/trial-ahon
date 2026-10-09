@@ -1,8 +1,8 @@
-# Databricks notebook source
 """Extract PSA 2024 census population data from the PXWeb API into a UV volume."""
 
 from __future__ import annotations
 
+import codecs
 import os
 from pathlib import Path
 from typing import Any
@@ -49,6 +49,12 @@ def fetch_csv() -> requests.Response:
         timeout=REQUEST_TIMEOUT_SECONDS,
     )
     resp.raise_for_status()
+    expected_encoding = os.environ["AHON_PSA_CSV_ENCODING"]
+    if not resp.encoding or codecs.lookup(resp.encoding).name != codecs.lookup(expected_encoding).name:
+        raise RuntimeError(
+            f"PSA CSV charset changed: configured {expected_encoding}, "
+            f"received {resp.headers.get('Content-Type', '<missing Content-Type>')}"
+        )
     return resp
 
 

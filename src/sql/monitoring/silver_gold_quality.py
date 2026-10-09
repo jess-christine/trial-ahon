@@ -24,7 +24,7 @@ BLGF_SILVER = table_name("ahon.silver.blgf_ldrrmf_annual_lgu_clean")
 
 CMCI_CODE_DIR = Path(__file__).resolve().parents[1] / "01_bronze_ingest"
 sys.path.insert(0, str(CMCI_CODE_DIR))
-from cmci_common import INDICATORS_BY_PILLAR  # noqa: E402
+from cmci_common import INDICATORS_BY_PILLAR
 
 Severity = Literal["BLOCKING", "WARNING"]
 
@@ -258,9 +258,16 @@ def contracts() -> tuple[Contract, ...]:
 
 
 def main() -> None:
-    from pyspark.sql import SparkSession, functions as F
+    from pyspark.sql import SparkSession
+    from pyspark.sql import functions as F
+    from pyspark.sql.types import (
+        LongType,
+        StringType,
+        StructField,
+        StructType,
+        TimestampType,
+    )
     from pyspark.sql.utils import AnalysisException
-    from pyspark.sql.types import LongType, StringType, StructField, StructType, TimestampType
 
     spark = SparkSession.builder.getOrCreate()
     spark.conf.set("spark.sql.session.timeZone", "UTC")

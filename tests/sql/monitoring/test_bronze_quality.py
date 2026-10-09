@@ -7,7 +7,7 @@ from unittest import TestCase
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPOSITORY_ROOT / "src" / "sql"))
 
-from monitoring.bronze_quality import (  # noqa: E402
+from monitoring.bronze_quality import (
     DATASETS,
     result_status,
     schema_drift,

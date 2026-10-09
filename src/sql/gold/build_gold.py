@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 CMCI_CODE_DIR = Path(__file__).resolve().parents[1] / "01_bronze_ingest"
 sys.path.insert(0, str(CMCI_CODE_DIR))
 
-from cmci_common import INDICATORS_BY_PILLAR  # noqa: E402
+from cmci_common import INDICATORS_BY_PILLAR
 
 CATALOG = os.environ.get("AHON_CATALOG", "ahon")
 
@@ -187,7 +187,7 @@ def build_fact_cmci_indicator(spark: SparkSession) -> None:
     for pillar, mapping in INDICATORS_BY_PILLAR.items():
         table_name = CMCI_SILVER_PREFIX + pillar.lower().replace(" ", "_")
         source = spark.table(table_name)
-        for indicator_name, indicator_code in mapping.items():
+        for indicator_code in mapping.values():
             frames.append(
                 source.select(
                     F.col("psgc_code").cast("string").alias("psgc_code"),
