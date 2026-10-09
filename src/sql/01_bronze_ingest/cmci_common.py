@@ -8,10 +8,14 @@ from urllib3.util.retry import Retry
 # CONFIG
 # ------------------------------------------------------------------
 
-PORTAL_URL = os.environ["AHON_CMCI_PORTAL_URL"]
-PROCESS_URL = os.environ["AHON_CMCI_PROCESS_URL"]
+PORTAL_URL = os.environ.get("AHON_CMCI_PORTAL_URL", "https://cmci.dti.gov.ph/data-portal.php")
+PROCESS_URL = os.environ.get("AHON_CMCI_PROCESS_URL", "https://cmci.dti.gov.ph/data-portal-process.php")
 CMCI_YEARS = tuple(
-    year.strip() for year in os.environ["AHON_CMCI_YEARS"].split(",") if year.strip()
+    year.strip()
+    for year in os.environ.get(
+        "AHON_CMCI_YEARS", "2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024"
+    ).split(",")
+    if year.strip()
 )
 if (
     not CMCI_YEARS

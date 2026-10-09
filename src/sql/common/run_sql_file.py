@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import inspect
 from pathlib import Path
 
 
@@ -83,7 +84,7 @@ def main() -> None:
     )
     sql_path = Path(args.sql_file)
     if not sql_path.is_absolute():
-        sql_path = Path(__file__).resolve().parents[3] / sql_path
+        sql_path = Path(inspect.currentframe().f_code.co_filename).resolve().parents[3] / sql_path
     sql_text = sql_path.read_text(encoding="utf-8")
     sql_text = render_sql(sql_text, catalog, source_volume)
 
