@@ -28,7 +28,13 @@ RAW_COLS = [
     "percent_urban",
     "census_year",
 ]
-PROVENANCE_COLS = ["source_name", "source_ref", "ingested_at", "batch_id", "row_hash"]
+PROVENANCE_COLS = [
+    "_source_name",
+    "_source_ref",
+    "_ingested_at",
+    "_batch_id",
+    "_row_hash",
+]
 SCHEMA = StructType([StructField(c, StringType(), True) for c in RAW_COLS])
 
 CREATE_TABLE_SQL = f"""
@@ -38,11 +44,11 @@ CREATE_TABLE_SQL = f"""
         urban_population        STRING,
         percent_urban           STRING,
         census_year             STRING,
-        source_name             STRING,
-        source_ref              STRING,
-        ingested_at             TIMESTAMP,
-        batch_id                STRING,
-        row_hash                STRING
+        _source_name            STRING,
+        _source_ref             STRING,
+        _ingested_at            TIMESTAMP,
+        _batch_id               STRING,
+        _row_hash               STRING
     ) USING DELTA
 """
 
@@ -84,11 +90,11 @@ def add_provenance(df: DataFrame, batch_id: str) -> DataFrame:
     """Add provenance columns and a SHA-256 row hash."""
     return df.withColumns(
         {
-            "source_name": lit("PSA PXWeb API"),
-            "source_ref": lit(str(SOURCE_PATH)),
-            "ingested_at": current_timestamp(),
-            "batch_id": lit(batch_id),
-            "row_hash": sha2(concat_ws("|", *[col(c) for c in RAW_COLS]), 256),
+            "_source_name": lit("PSA PXWeb API"),
+            "_source_ref": lit(str(SOURCE_PATH)),
+            "_ingested_at": current_timestamp(),
+            "_batch_id": lit(batch_id),
+            "_row_hash": sha2(concat_ws("|", *[col(c) for c in RAW_COLS]), 256),
         }
     )
 

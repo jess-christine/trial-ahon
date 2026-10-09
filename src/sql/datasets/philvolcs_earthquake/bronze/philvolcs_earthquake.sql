@@ -14,31 +14,32 @@ CREATE TABLE IF NOT EXISTS ahon.bronze.philvolcs_earthquake_data (
     _row_hash STRING
 );
 
-MERGE INTO ahon.bronze.philvolcs_earthquake_data AS target
-USING (
+WITH run_context AS (
+    SELECT uuid() AS batch_id
+), source_rows AS (
     SELECT
         raw.`Date-Time` AS `Date-Time`,
-        try_cast(raw.Latitude AS DOUBLE) AS Latitude,
-        try_cast(raw.Longitude AS DOUBLE) AS Longitude,
-        try_cast(raw.Depth AS DOUBLE) AS Depth,
-        try_cast(raw.Magnitude AS DOUBLE) AS Magnitude,
-        nullif(trim(raw.Location), '') AS Location,
-        nullif(trim(raw.Month), '') AS Month,
-        try_cast(raw.Year AS INT) AS Year,
+        raw.Latitude AS Latitude,
+        raw.Longitude AS Longitude,
+        raw.Depth AS Depth,
+        raw.Magnitude AS Magnitude,
+        raw.Location AS Location,
+        raw.Month AS Month,
+        raw.Year AS Year,
         'philvolcs_earthquake_data' AS _source_name,
         '/Volumes/ahon/reference/source/philvolcs_earthquake/phivolcs_earthquake_all_years.csv' AS _source_ref,
         current_timestamp() AS _ingested_at,
-        uuid() AS _batch_id,
+        CAST(context.batch_id AS STRING) AS _batch_id,
         sha2(concat_ws(
             '||',
-            raw.`Date-Time`,
-            raw.Latitude,
-            raw.Longitude,
-            raw.Depth,
-            raw.Magnitude,
-            raw.Location,
-            raw.Month,
-            raw.Year
+            coalesce(CAST(raw.`Date-Time` AS STRING), ''),
+            coalesce(CAST(raw.Latitude AS STRING), ''),
+            coalesce(CAST(raw.Longitude AS STRING), ''),
+            coalesce(CAST(raw.Depth AS STRING), ''),
+            coalesce(CAST(raw.Magnitude AS STRING), ''),
+            coalesce(CAST(raw.Location AS STRING), ''),
+            coalesce(CAST(raw.Month AS STRING), ''),
+            coalesce(CAST(raw.Year AS STRING), '')
         ), 256) AS _row_hash
     FROM read_files(
         '/Volumes/ahon/reference/source/philvolcs_earthquake/phivolcs_earthquake_all_years.csv',
@@ -46,7 +47,7 @@ USING (
         header => true,
         inferColumnTypes => true
     ) AS raw
-) AS source
-ON target._row_hash = source._row_hash
-WHEN MATCHED THEN UPDATE SET *
-WHEN NOT MATCHED THEN INSERT *;
+    CROSS JOIN run_context AS context
+)
+INSERT OVERWRITE TABLE ahon.bronze.philvolcs_earthquake_data
+SELECT * FROM source_rows;

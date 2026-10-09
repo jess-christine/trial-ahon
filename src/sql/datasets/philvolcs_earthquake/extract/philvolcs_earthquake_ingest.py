@@ -6,15 +6,6 @@ from io import StringIO
 import pandas as pd
 import requests
 
-try:
-    import urllib3
-except ImportError:  # pragma: no cover - optional dependency
-    urllib3 = None
-
-# Suppress SSL warnings when the dependency is available
-if urllib3 is not None:
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
                 "July", "August", "September", "October", "November", "December"]
 
@@ -29,10 +20,7 @@ def scrape_current_month_from_main_page():
     try:
         print("  Fetching from main page (current month)...", end=" ")
 
-        session = requests.Session()
-        session.verify = False
-
-        response = session.get(url, timeout=15)
+        response = requests.get(url, timeout=15)
         response.raise_for_status()
 
         tables = pd.read_html(StringIO(response.text), skiprows=1)
@@ -108,10 +96,7 @@ def scrape_phivolcs_data_from_html(year, month_name):
     try:
         print(f"  Fetching: {month_name} {year}...", end=" ")
 
-        session = requests.Session()
-        session.verify = False
-
-        response = session.get(url, timeout=15)
+        response = requests.get(url, timeout=15)
         response.raise_for_status()
 
         tables = pd.read_html(StringIO(response.text), skiprows=1)

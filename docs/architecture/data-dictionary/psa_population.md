@@ -7,9 +7,9 @@ Raw 2024 Philippine Statistics Authority (PSA) census population data, loaded in
 - 1,744 rows from the 2024 Census of Population (reference date 1 July 2024), loaded into `ahon.bronze.psa_population_raw`.
 - Four geographic levels: 1 national, 18 regions, 118 provinces, 1,607 cities/municipalities.
 - Source: PSA OpenSTAT PXWeb table `0241A6DPUP1.px`, saved as a CSV in `/Volumes/ahon/reference/source/psa_population/`.
-- Loaded with a Delta `MERGE` on `geographic_location` + `census_year`; matched rows update only when `row_hash` changes.
+- Loaded with a Delta `MERGE` on `geographic_location` + `census_year`; matched rows update only when `_row_hash` changes.
 - All quality checks passed on the first load, and the regions sum to the national total (112,727,776).
-- To do in silver: remove the `1/` footnote marker from the national row and cast numeric columns.
+- Silver removes the documented `1/` footnote marker from the national row, splits the geographic path, and casts numeric columns.
 
 ## How to reproduce
 
@@ -46,8 +46,8 @@ Settings are constants at the top of each notebook. Change them there if the tea
 
 ### Re-running and idempotency
 
-- Re-running with unchanged source data is safe: the merge matches every row and updates none, because `row_hash` is identical. Row count stays the same.
-- If PSA revises a value, only the affected rows are updated, and their provenance columns (`ingested_at`, `batch_id`, `source_ref`) are refreshed.
+- Re-running with unchanged source data is safe: the merge matches every row and updates none, because `_row_hash` is identical. Row count stays the same.
+- If PSA revises a value, only the affected rows are updated, and their provenance columns (`_ingested_at`, `_batch_id`, `_source_ref`) are refreshed.
 - The extract step overwrites the CSV each run, so the volume always holds the latest pull. Keep a copy first if you need the previous version.
 - To load another census year, update `API_URL` and `CENSUS_YEAR` and re-run both steps. Rows for different years do not overwrite each other, since `census_year` is part of the merge key.
 
@@ -62,7 +62,7 @@ Settings are constants at the top of each notebook. Change them there if the tea
 | Null or empty values | 0 in every column |
 | Sum of region `total_population` | 112,727,776, equal to the national row |
 
-The batch ID and `ingested_at` differ on every run. The first load used batch `1fd78b5e-517e-402c-813c-4355211b0001`.
+The batch ID and `_ingested_at` differ on every run. The first load used batch `1fd78b5e-517e-402c-813c-4355211b0001`.
 
 ## Files ingested
 
@@ -74,7 +74,7 @@ This is the only file ingested.
 
 ## Columns
 
-All columns are `STRING` except `ingested_at`. Values are stored exactly as published; casting happens downstream.
+All source columns are `STRING`; `_ingested_at` is `TIMESTAMP`. Values are stored as published by the loader; casting happens downstream.
 
 ### Source columns
 
@@ -90,13 +90,38 @@ All columns are `STRING` except `ingested_at`. Values are stored exactly as publ
 
 | Column | Type | Description |
 |---|---|---|
-| `source_name` | STRING | Source system. Always `PSA PXWeb API`. |
-| `source_ref` | STRING | Path of the file the row was read from. |
-| `ingested_at` | TIMESTAMP | When the batch that last wrote this row ran. |
-| `batch_id` | STRING | UUID of the load run that last wrote this row. |
-| `row_hash` | STRING | SHA-256 of the five source columns joined with `\|`. Used to detect changed rows. Unique per row (1,744 distinct). |
+| `_source_name` | STRING | Source system. Always `PSA PXWeb API`. |
+| `_source_ref` | STRING | Path of the file the row was read from. |
+| `_ingested_at` | TIMESTAMP | When the batch that last wrote this row ran. |
+| `_batch_id` | STRING | UUID of the load run that last wrote this row. |
+| `_row_hash` | STRING | SHA-256 of the five source columns joined with `\|`. Used to detect changed rows. Unique per row (1,744 distinct). |
 
-Because updates are gated on `row_hash`, unchanged rows keep their original `ingested_at`, `batch_id` and `source_ref`. These columns mean "last changed by", not "last seen by".
+Because updates are gated on `_row_hash`, unchanged rows keep their original `_ingested_at`, `_batch_id` and `_source_ref`. These columns mean "last changed by", not "last seen by". Existing Delta tables created with non-underscored provenance fields must run `src/sql/00_setup/03_migrate_psa_bronze_provenance.sql` once before using the updated loader or validator.
+
+## Silver: `ahon.silver.psa_population_clean`
+
+- **One row is:** one PSA geographic path for a census year, with parsed numeric measures and explicit hierarchy fields.
+- **Key:** `geographic_location + census_year`.
+- **Built from Bronze by:** `src/sql/datasets/psa_population/silver/psa_population_clean.sql`.
+
+Silver removes the documented `1/` footnote marker, splits the full path into region, province, and LGU names, assigns the source hierarchy level, and casts population measures to `BIGINT` and percent urban to `DOUBLE`. It carries Bronze provenance forward and retains every row; failed casts remain `NULL` and are visible in validation results. Gold uses only its city/municipality rows to build `fact_population`; it does not distribute municipal totals to barangays or include national, region, and province rows in that fact. See [fact_population](fact_population.md) for Gold grain and matching rules.
+
+| Column | Type | Description | Notes |
+|---|---|---|---|
+| `geographic_location` | string | Full cleaned geographic path | Silver key part |
+| `geographic_level` | string | National, region, province, city/municipality, or unknown path depth | |
+| `region_name` | string | Region component of the path | `NULL` above region level |
+| `province_name` | string | Province component of the path | `NULL` above province level |
+| `lgu_name` | string | City/municipality component | `NULL` above city/municipality level |
+| `census_year` | int | Census year | Silver key part |
+| `total_population` | bigint | Total population | Failed cast remains `NULL` |
+| `urban_population` | bigint | Urban population | Failed cast remains `NULL` |
+| `percent_urban` | double | Percent of population in urban areas | 0 to 100 source scale |
+| `_source_name` | string | Source system | Carried from Bronze |
+| `_source_ref` | string | Source file | Carried from Bronze |
+| `_ingested_at` | timestamp (UTC) | Bronze load time | Carried from Bronze |
+| `_batch_id` | string | Bronze load run identifier | Carried from Bronze |
+| `_row_hash` | string | Bronze raw-row hash | Carried from Bronze |
 
 ## Data profile (first load)
 

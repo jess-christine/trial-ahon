@@ -33,6 +33,16 @@ What it measures: each LGU's yearly budget (appropriation) and actual spending (
 
 Rows per file: 1,513 (FY2018), 1,566, 1,612, 1,637, 1,683, 1,707, 1,716 (FY2024), 11,434 in total. The load stops without writing if a file's count differs.
 
+## Silver: `ahon.silver.blgf_ldrrmf_annual_lgu_clean`
+
+- **One row is:** one Bronze report row, typed for downstream joins and analysis.
+- **Key:** no PSGC key is assigned; the source has no PSGC code and locality matching has not been reviewed.
+- **Built from Bronze by:** `src/sql/datasets/blgf_ldrrmf_annual_lgu/silver/blgf_ldrrmf_annual_lgu_clean.sql`.
+
+Fiscal year is parsed from the filename in `_source_ref`; amount columns are cast to `DECIMAL(18,2)`. Failed casts remain `NULL` and appear in Bronze validation results. The snapshot is overwritten from Bronze on each run so source duplicates are retained and reruns are idempotent. No utilization rate, PSGC match, or preparedness score is derived here.
+
+The Silver schema contains `fiscal_year INT`, the four location/type fields as `STRING`, the six appropriation/expenditure fields as `DECIMAL(18,2)`, and the five Bronze provenance fields unchanged. Its row lineage is the `_row_hash` and `_source_ref` pair; it does not claim a unique LGU key.
+
 ## Known issues
 
 - **The Excel files do not share one layout.** The data sheet name and position change by year, the header sits on a different row in FY2024, FY2023 puts `LGU TYPE` first, and FY2021 labels it `LGU CODE`. The load finds the header row and maps columns by name, and stops with an error if a file does not fit.

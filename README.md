@@ -56,7 +56,7 @@ ahon-pipeline/
 - **Dataset subfolders:** `bronze/` and `silver/` are the standard ones. If a dataset needs more, its owner can add a subfolder, such as `extract/` for code that pulls data from the source and writes the raw files. Keep the subfolder inside that dataset's folder, and describe it with a comment in this tree or a short note in the dataset's folder.
 - **Source files:** files from file-based sources are uploaded to the team's Hugging Face dataset repository and copied, unchanged, into the `source` volume, which is in the `reference` schema (`ahon.reference.source`), by the dataset's `extract/` code, in one folder named after the dataset. Bronze code reads from the volume only. See [docs/decisions/0004-source-file-landing-hugging-face.md](docs/decisions/0004-source-file-landing-hugging-face.md).
 - **Schemas:** folder names match the schema names in the naming standard, with no number prefixes.
-- **Setup scripts:** files in `src/sql/setup/` have number prefixes (`01_`, `02_`) because they must run in order.
+- **Setup scripts:** files in `src/sql/00_setup/` have number prefixes because they must run in order.
 - **Reusable Python:** in `src/sql/common/`, imported by the layer code.
 - **Notebooks:** experiments only. Jobs run `.sql` and `.py` files from `src/sql/`.
 - **Tests:** in `tests/`, in the same layout as `src/sql/`.
@@ -71,15 +71,17 @@ Two catalogs, one per environment, with the same schemas in each. Code moves bet
 
 ```
 CATALOG                    # ahon (production) or ahon_dev (development), with the same schemas in both
-├── bronze                 # raw data loaded into tables, plus provenance columns: blgf_ldrrmf_annual_lgu
-├── silver                 # cleaned, typed, deduplicated: blgf_ldrrmf_annual_lgu_clean
-├── gold                   # dimensions and facts: dim_location, fact_event
+├── bronze                 # raw source tables: BLGF, CMCI, PHIVOLCS, PSA population, and PSGC
+├── silver                 # source-specific typed and mapped tables; see the data dictionary
+├── gold                   # target dimensions and facts: dim_lgu, dim_cmci_indicator, fact_cmci_indicator, fact_population, fact_ldrrmf, fact_earthquake_event
 ├── platinum               # analytics tables built from gold
 ├── source                 # pending: schema name still open, no volumes here for now (see below)
 ├── reference              # lookup and code tables, plus the `source` volume for raw files
-└── monitoring             # control table, run logs, data quality rules and results
+└── monitoring             # control table, run log, and append-only dq_result table
 ```
 
 - **Table names:** the bronze table is named after the dataset, and the silver table adds `_clean`, so `ahon.bronze.blgf_ldrrmf_annual_lgu` pairs with `ahon.silver.blgf_ldrrmf_annual_lgu_clean`. Gold tables start with `dim_` or `fact_`. The layer is never part of the name, because the schema already says it.
 - **Raw files:** raw files live in the `source` volume, which is now in the `reference` schema (`ahon.reference.source`), one folder per dataset. The volume holds files, not tables. The separate `source` schema stays listed as pending until the team decides its final name or drops it.
 - **Full rules:** see the [naming standard](docs/standards/naming.md) and [decision 0001](docs/decisions/0001-naming-standard.md).
+- Bronze quality checks cover every implemented Bronze table and append rule counts to `ahon.monitoring.dq_result`; see [monitoring operations](docs/operations/monitoring.md).
+- Silver source mappings are listed in the [data dictionary](docs/architecture/data-dictionary/README.md). They do not calculate risk or preparedness scores.

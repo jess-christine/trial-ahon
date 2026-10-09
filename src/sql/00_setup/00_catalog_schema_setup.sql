@@ -10,7 +10,7 @@ CREATE SCHEMA IF NOT EXISTS ahon.gold;
 
 CREATE SCHEMA IF NOT EXISTS ahon.platinum;
 
-CREATE SCHEMA IF NOT EXISTS ahon.quality;
+CREATE SCHEMA IF NOT EXISTS ahon.monitoring;
 
 CREATE SCHEMA IF NOT EXISTS ahon.reference;
 

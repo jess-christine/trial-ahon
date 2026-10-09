@@ -1,6 +1,6 @@
 # PHILVOLCS Earthquake Seismic Activity
 
-- **Source:** Philippine Institute of Volcanology and Seismology (PHIVOLCS), Department of Science and Technology (DOST). The raw extract is the combined CSV `phivolcs_earthquake_all_years.csv` generated from PHIVOLCS monthly earthquake pages and landed in the `ahon.reference.source` volume under the 'philippine_earthquake' folder.
+- **Source:** Philippine Institute of Volcanology and Seismology (PHIVOLCS), Department of Science and Technology (DOST). The raw extract is the combined CSV `phivolcs_earthquake_all_years.csv` generated from PHIVOLCS monthly earthquake pages and landed in the `ahon.reference.source` volume under the `philvolcs_earthquake` folder.
 - **Coverage:** Monthly earthquake listings from 2019-01-01 through 2026-09-29 in the current extract, covering seismic events reported in the Philippines and nearby offshore areas; the source is refreshed as PHIVOLCS publishes new monthly tables.
 - **Owner:** Department of Science and Technology - Philippine Institute of Volcanology and Seismology (DOST-Philvolcs)
 
@@ -33,6 +33,8 @@ The raw file in the current profile has 129,792 rows, of which 129,711 pass the 
 - **One row is:** one valid earthquake event after parsing and validating the raw PHIVOLCS rows, with non-event banner rows removed and impossible values filtered out.
 - **Key:** `id`
 - **Built from bronze by:** `src/sql/datasets/philvolcs_earthquake/silver/philvolcs_earthquake_clean.sql`.
+
+`src/sql/monitoring/bronze_quality.py` records timestamp parseability, coordinate and measure ranges, provenance, and exact-row-hash duplicates without changing Bronze. Source anomalies are warnings because the feed includes banner rows and incomplete measurements; the documented Silver validity rules determine which rows enter the analytic event table. Duplicate event observations remain visible unless a project-owned duplicate policy is approved.
 
 | Column | Type | Description | Notes |
 | --- | --- | --- | --- |

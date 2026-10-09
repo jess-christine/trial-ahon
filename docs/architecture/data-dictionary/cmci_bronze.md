@@ -106,7 +106,10 @@ ahon.silver.cmci_government_efficiency
 ahon.silver.cmci_infrastructure
 ahon.silver.cmci_resiliency
 ahon.silver.cmci_innovation
+ahon.silver.cmci_ingestion_batch_clean
 ```
+
+The batch audit record is also summarized in `ahon.silver.cmci_ingestion_batch_clean` by `src/sql/02_silver_clean/cmci_batch_status.sql`. The raw HTML remains only in Bronze; Silver retains request scope, count metadata, response hash, provenance, and an `is_complete` flag based on the documented expected-count formula.
 
 - **One row is:** one approved PSGC LGU and CMCI year for one pillar
 - **Key:** `psgc_code + year`
@@ -165,13 +168,15 @@ Unauthorized PSGC codes: 0
 - The existing Delta tables require a one-time schema migration before writers populate the five standard Bronze provenance columns.
 - A reproducible baseline CMCI mapping bootstrap still requires validation for fresh-environment deployment.
 
-## Open
+## Quality and open items
 
-- Complete the one-time Delta schema migration for both CMCI Bronze tables.
-- Populate and validate the five standard provenance fields in `cmci_batch_ingest.py`.
-- Validate `_row_hash` as 64 hexadecimal characters.
-- Complete incremental Silver parsing and confirm 17,974 rows per pillar table.
-- Add automated quality gates for mapping uniqueness, Bronze provenance, and Silver coverage.
+- Run Bronze checks with `src/sql/monitoring/bronze_quality.py`; outcomes are appended to `ahon.monitoring.dq_result`. The checks validate standard provenance and SHA-256 format.
+- `src/sql/02_silver_clean/cmci_indicator_parse.py` selects the most recent complete request batch for each `psgc_code + year`, pivots the configured indicators into the five documented pillar tables, preserves missing values as `NULL`, and merges on the documented key. It does not synthesize missing LGU-year rows.
+- Duplicate LGU-year-indicator keys in the selected batch stop the parser so an arbitrary aggregate cannot hide conflicting values.
+- `src/sql/02_silver_clean/cmci_batch_status.sql` maps the raw HTML audit table to a compact Silver batch status table. Raw HTML remains in Bronze.
+- Full expected coverage is 17,974 rows per pillar after a full ingestion. Test-mode or partial Bronze batches naturally produce less and are not treated as complete coverage; no Databricks full-run has verified that count.
+- Existing Delta tables deployed before the provenance schema change may need a controlled schema migration before the validator can run.
+- A reproducible baseline CMCI mapping bootstrap still requires validation for fresh-environment deployment.
 
 ## Related Documentation
 

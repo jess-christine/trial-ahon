@@ -38,3 +38,5 @@ if it changes, write a new record and mark the old one
 | [0002](0002-team-workflow.md) | Team workflow | Accepted |
 | [0003](0003-repository-structure-initial.md) | Repository structure | Accepted |
 | [0004](0004-source-file-landing-hugging-face.md) | Land source files through Hugging Face | Accepted |
+| [0005](0005-bronze-quality-and-silver-mapping.md) | Bronze quality results and source Silver mappings | Accepted |
+| [0006](0006-city-municipality-analysis-grain.md) | City/municipality analysis grain | Accepted |
