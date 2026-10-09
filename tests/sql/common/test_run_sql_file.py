@@ -7,7 +7,7 @@ from unittest import TestCase
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPOSITORY_ROOT / "src" / "sql" / "common"))
 
-from run_sql_file import split_statements  # noqa: E402
+from run_sql_file import render_sql, split_statements  # noqa: E402
 
 
 class SqlFileRunnerTests(TestCase):
@@ -24,3 +24,12 @@ class SqlFileRunnerTests(TestCase):
         for sql in ("SELECT 'unfinished", "SELECT 1 /* unfinished"):
             with self.subTest(sql=sql), self.assertRaises(ValueError):
                 split_statements(sql)
+
+    def test_render_sql_uses_configured_catalog_and_source_volume(self) -> None:
+        rendered = render_sql(
+            "select * from ahon.bronze.events; read_files('/Volumes/ahon/reference/source/events.csv')",
+            "ahon_test",
+            "/Volumes/custom/source/",
+        )
+        self.assertIn("ahon_test.bronze.events", rendered)
+        self.assertIn("/Volumes/custom/source/events.csv", rendered)

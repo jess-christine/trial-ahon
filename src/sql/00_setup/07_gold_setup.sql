@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS ahon.gold.fact_ldrrmf (
     match_confidence DECIMAL(5, 4)
 )
 USING DELTA
-COMMENT 'One original BLGF report row per LGU and fiscal year; unmatched until a reviewed PSGC map exists';
+COMMENT 'One original BLGF report row per city/municipality and fiscal year; exact active-reference name matches only';
 
 CREATE TABLE IF NOT EXISTS ahon.gold.fact_earthquake_event (
     earthquake_fact_key BIGINT NOT NULL,
@@ -77,4 +77,4 @@ CREATE TABLE IF NOT EXISTS ahon.gold.fact_earthquake_event (
     match_confidence DECIMAL(5, 4)
 )
 USING DELTA
-COMMENT 'One valid PHIVOLCS observation; geography remains unmatched pending an approved rule';
+COMMENT 'One valid PHIVOLCS observation; geographic matches use a unique approved approximate municipal boundary';

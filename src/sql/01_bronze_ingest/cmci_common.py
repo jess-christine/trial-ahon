@@ -1,3 +1,5 @@
+import os
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -6,14 +8,17 @@ from urllib3.util.retry import Retry
 # CONFIG
 # ------------------------------------------------------------------
 
-PORTAL_URL = (
-    "https://cmci.dti.gov.ph/data-portal.php"
+PORTAL_URL = os.environ["AHON_CMCI_PORTAL_URL"]
+PROCESS_URL = os.environ["AHON_CMCI_PROCESS_URL"]
+CMCI_YEARS = tuple(
+    year.strip() for year in os.environ["AHON_CMCI_YEARS"].split(",") if year.strip()
 )
-
-PROCESS_URL = (
-    "https://cmci.dti.gov.ph/"
-    "data-portal-process.php"
-)
+if (
+    not CMCI_YEARS
+    or len(CMCI_YEARS) != len(set(CMCI_YEARS))
+    or any(not year.isdigit() for year in CMCI_YEARS)
+):
+    raise ValueError("AHON_CMCI_YEARS must contain unique numeric reporting years")
 
 REQUEST_TIMEOUT_SECONDS = 60
 

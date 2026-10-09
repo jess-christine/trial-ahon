@@ -1,7 +1,7 @@
 # psgc
 
-- **Source:** PSA Philippine Standard Geographic Code API, queried by publication period.
-- **Coverage:** records returned by the configured PSGC API periods; several versions may contain the same code.
+- **Source:** PSA Philippine Standard Geographic Code API, queried by publication period from the bundle-configured API base URL.
+- **Coverage:** records returned by the bundle-configured PSGC periods; several versions may contain the same code.
 - **Owner:** Project AHON data team.
 - **Business purpose:** provide canonical geographic codes and hierarchy attributes used to link source datasets to LGUs.
 
@@ -9,7 +9,7 @@
 
 - **One row is:** one PSGC API record for one code and source version.
 - **Key:** source `psgc_code + version`; the Bronze loader merges by `_row_hash` to retain source revisions.
-- **Loaded by:** `src/sql/datasets/psgc/psgc_api.py`.
+- **Loaded by:** `src/sql/datasets/psgc/psgc_api.py`; API base URL and publication periods are job parameters, and credentials come from Databricks Secrets.
 - **Row hash covers:** the 16 source fields in the loader's `raw_cols`, before provenance is added.
 
 The API's nested `populations` field is serialized as JSON text.
@@ -32,7 +32,7 @@ The API's nested `populations` field is serialized as JSON text.
 | `status` | string | Source record status | |
 | `version` | string | Source publication period | |
 | `populations_json` | string | JSON text for nested source population values | |
-| `_source_name` | string | Source system | `PSGC API` |
+| `_source_name` | string | Bronze dataset name | `psgc` |
 | `_source_ref` | string | API base URL | Token is excluded |
 | `_ingested_at` | timestamp (UTC) | Bronze load time | |
 | `_batch_id` | string | Load run identifier | |

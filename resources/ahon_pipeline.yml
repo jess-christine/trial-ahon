@@ -144,6 +144,8 @@ resources:
             base_parameters:
               psgc_secret_scope: ${var.psgc_secret_scope}
               psgc_secret_key: ${var.psgc_secret_key}
+              psgc_api_base_url: ${var.psgc_api_base_url}
+              psgc_periods: ${var.psgc_periods}
 
         - task_key: silver_psa
           max_retries: 1

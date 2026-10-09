@@ -8,6 +8,7 @@ import requests
 
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
                 "July", "August", "September", "October", "November", "December"]
+SOURCE_BASE_URL = os.environ["AHON_PHIVOLCS_BASE_URL"].rstrip("/")
 
 
 def scrape_current_month_from_main_page():
@@ -15,7 +16,7 @@ def scrape_current_month_from_main_page():
     Scrapes the latest earthquake data from the main PHIVOLCS page.
     This is used for the current month that doesn't have a dedicated monthly page yet.
     """
-    url = "https://earthquake.phivolcs.dost.gov.ph/"
+    url = SOURCE_BASE_URL + "/"
 
     try:
         print("  Fetching from main page (current month)...", end=" ")
@@ -89,7 +90,7 @@ def scrape_phivolcs_data_from_html(year, month_name):
     If the monthly page returns 404, it will try scraping from the main page.
     """
     url = (
-        f"https://earthquake.phivolcs.dost.gov.ph/EQLatest-Monthly/"
+        f"{SOURCE_BASE_URL}/EQLatest-Monthly/"
         f"{year}/{year}_{month_name}.html"
     )
 
@@ -313,7 +314,7 @@ def display_statistics(df):
 
 if __name__ == "__main__":
     # Configuration
-    YEARS_TO_SCRAPE = 8 # From 2019 data (including current year:2026)
+    YEARS_TO_SCRAPE = int(os.environ["AHON_PHIVOLCS_YEARS_BACK"])
 
     #guys, change this if u want to reflect this on your catalog 
     catalog = os.environ.get("AHON_CATALOG", "ahon")

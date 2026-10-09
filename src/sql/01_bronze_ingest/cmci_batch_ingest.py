@@ -20,6 +20,7 @@ from pyspark.sql.types import (
 )
 
 from cmci_common import (
+    CMCI_YEARS,
     EXPECTED_INDICATOR_COUNT,
     EXPECTED_INDICATOR_LABELS,
     PORTAL_URL,
@@ -44,23 +45,7 @@ TARGET_TABLE = f"{CATALOG}.bronze.cmci_raw_indicator_batch_html"
 
 REQUEST_DELAY_SECONDS = 1.0
 
-DEFAULT_YEARS = [
-    "2014",
-    "2015",
-    "2016",
-    "2017",
-    "2018",
-    "2019",
-    "2020",
-    "2021",
-    "2022",
-    "2023",
-    "2024",
-]
-
-YEARS = list(
-    DEFAULT_YEARS
-)
+YEARS = list(CMCI_YEARS)
 
 # ------------------------------------------------------------------
 # RUN ARGUMENTS

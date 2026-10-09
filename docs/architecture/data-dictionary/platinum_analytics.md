@@ -4,7 +4,7 @@
 - **Source and lineage:** Gold `dim_lgu`, `fact_population`, `fact_earthquake_event`, `fact_cmci_indicator`, `dim_cmci_indicator`, and `fact_ldrrmf`; event LGU assignment uses Silver `geoportal_city_municipality_boundary_clean` through Gold match fields.
 - **Built by:** `src/sql/platinum/build_platinum.py` after `src/sql/gold/build_gold.py` and Silver/Gold validation.
 - **Run:** Databricks Asset Bundle job `ahon_end_to_end`; see [bundle operations](../../operations/databricks-bundle.md).
-- **Audit:** each output row has `run_id` and `calculated_at`; coverage and missing component counts are appended to `ahon.monitoring.dq_result`.
+- **Audit:** each output row has `run_id` and `calculated_at`; coverage, output-grain uniqueness, current-run IDs, and allowed non-null category values are recorded in `ahon.monitoring.dq_result` before snapshot replacement.
 
 The owner approved the following assumptions for experimental v1. They are not calibrated operational thresholds:
 
@@ -12,7 +12,7 @@ The owner approved the following assumptions for experimental v1. They are not c
 2. Earthquake activity uses a rolling five-year window and the equal-weight mean of percentiles for event count, mean magnitude, and inverse mean event-to-LGU-centroid distance. Distances use geodesic meters. Event assignments use approximate Geoportal polygons.
 3. `risk_score = population_exposure_score * earthquake_activity_score`, from 0 to 10,000. Risk levels use cross-sectional tertiles.
 4. CMCI capacity is the average percentile of all available CMCI indicators, scored within indicator and year; an LGU with incomplete indicator coverage has null capacity.
-5. LDRRMF utilization is total expenditure / total appropriation * 100; zero/missing appropriation leaves the rate null.
+5. LDRRMF utilization is summed total expenditure / summed total appropriation * 100 across original BLGF report lines for the LGU and fiscal year; zero/missing appropriation leaves the rate null. This preserves the fact's report-line grain without averaging row percentages.
 6. `preparedness_score = cmci_capacity_score + ldrrmf_utilization_score`; if either input is null, preparedness and gap are null.
 7. `preparedness_gap = preparedness_score - risk_score`; output ranks this descending as approved. The two components use different ranges (0–200 vs 0–10,000), so this gap is not a comparable-scale deficit.
 8. Vulnerability labels use high-risk tertile plus low-preparedness tertile. CMCI priorities rank the lowest mean indicator percentiles among those highest-priority LGUs.
@@ -41,6 +41,6 @@ The owner approved the following assumptions for experimental v1. They are not c
 
 ## Quality and limitations
 
-Coverage rules warn for active LGUs lacking population, spatially matched events, or complete preparedness inputs. Source anomalies and unmatched rows remain in Bronze/Silver/Gold. The spatial join requires a valid boundary file, unique PSGC polygon membership, and Runtime 17.1+; approximate boundaries can assign points incorrectly. Only one PHIVOLCS event per polygon is counted once; points covered by multiple polygons are excluded from event aggregation and remain ambiguous in Gold. Current outputs overwrite deterministic table snapshots; a failed run leaves prior snapshots available until a write succeeds. DQ history is append-only.
+Coverage rules warn for active LGUs lacking population, spatially matched events, or complete preparedness inputs. Duplicate matched population `(psgc_code, year)` rows block before they can distort percentiles. LDRRMF report lines are aggregated by matched LGU/fiscal year before the stated utilization ratio is calculated. Platinum checks each output key, current `run_id`, category mapping, metric formulas, null propagation, and priority percentile bounds, then records those checks before writing. Source anomalies and unmatched rows remain in Bronze/Silver/Gold. The spatial join requires a valid boundary file, unique PSGC polygon membership, and Runtime 17.1+; approximate boundaries can assign points incorrectly. Only one PHIVOLCS event per polygon is counted once; points covered by multiple polygons are excluded from event aggregation and remain ambiguous in Gold. Each output is replaced only after all transformations, coverage actions, and validations succeed; a failure during a later table replacement can leave different output tables with different run IDs. Compare `run_id` values and rerun the complete Platinum task before using the outputs together. DQ history is append-only.
 
 The cross-sectional percentiles and tertiles depend on each run's observed cohort. The 2024 PSA extract and available CMCI/LDRRMF reporting years constrain temporal comparability. No infrastructure exposure, population density, or income-class term is included in these formulas. Interpret all results as experimental until the owner calibrates and approves thresholds, units, and production use.

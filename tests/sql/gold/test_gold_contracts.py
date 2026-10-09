@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import os
 import sys
 from pathlib import Path
 from unittest import TestCase
@@ -9,6 +10,10 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SQL_ROOT = REPOSITORY_ROOT / "src" / "sql"
 sys.path.insert(0, str(SQL_ROOT))
 sys.path.insert(0, str(SQL_ROOT / "monitoring"))
+
+os.environ.setdefault("AHON_CMCI_PORTAL_URL", "https://test.invalid/cmci-portal")
+os.environ.setdefault("AHON_CMCI_PROCESS_URL", "https://test.invalid/cmci-process")
+os.environ.setdefault("AHON_CMCI_YEARS", "2014,2024")
 
 from gold.build_gold import indicator_records  # noqa: E402
 from monitoring.silver_gold_quality import contracts  # noqa: E402

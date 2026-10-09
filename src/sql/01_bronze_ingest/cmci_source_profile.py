@@ -1,7 +1,10 @@
+import os
+
 from bs4 import BeautifulSoup
 from pyspark.sql import functions as F
 
 from cmci_common import (
+    CMCI_YEARS,
     EXPECTED_INDICATOR_COUNT,
     PORTAL_URL,
     REQUEST_TIMEOUT_SECONDS,
@@ -14,35 +17,25 @@ from cmci_common import (
 # Configuration
 # ------------------------------------------------------------------
 
-LGU_MASTER_TABLE = "ahon.reference.lgu_master"
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
 
-CMCI_MAP_TABLE = "ahon.reference.cmci_lgu_map"
+LGU_MASTER_TABLE = f"{CATALOG}.reference.lgu_master"
+
+CMCI_MAP_TABLE = f"{CATALOG}.reference.cmci_lgu_map"
 
 BRONZE_TABLE = (
-    "ahon.bronze.cmci_raw_indicator_batch_html"
+    f"{CATALOG}.bronze.cmci_raw_indicator_batch_html"
 )
 
 SILVER_TABLES = [
-    "ahon.silver.cmci_economic_dynamism",
-    "ahon.silver.cmci_government_efficiency",
-    "ahon.silver.cmci_infrastructure",
-    "ahon.silver.cmci_resiliency",
-    "ahon.silver.cmci_innovation",
+    f"{CATALOG}.silver.cmci_economic_dynamism",
+    f"{CATALOG}.silver.cmci_government_efficiency",
+    f"{CATALOG}.silver.cmci_infrastructure",
+    f"{CATALOG}.silver.cmci_resiliency",
+    f"{CATALOG}.silver.cmci_innovation",
 ]
 
-EXPECTED_YEARS = [
-    "2014",
-    "2015",
-    "2016",
-    "2017",
-    "2018",
-    "2019",
-    "2020",
-    "2021",
-    "2022",
-    "2023",
-    "2024",
-]
+EXPECTED_YEARS = list(CMCI_YEARS)
 
 EXPECTED_BATCH_SIZE = 10
 

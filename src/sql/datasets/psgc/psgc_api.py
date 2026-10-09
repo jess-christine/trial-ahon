@@ -9,6 +9,8 @@
 # workspace secret store and is never written to notebook parameters or logs.
 dbutils.widgets.text("psgc_secret_scope", "", "PSGC token secret scope")
 dbutils.widgets.text("psgc_secret_key", "", "PSGC token secret key")
+dbutils.widgets.text("psgc_api_base_url", "", "PSGC API base URL")
+dbutils.widgets.text("psgc_periods", "", "Comma-separated PSGC publication periods")
 
 import os
 import time
@@ -17,8 +19,12 @@ import uuid
 import requests
 from pyspark.sql.functions import col, concat_ws, current_timestamp, lit, sha2, to_json
 
-API_BASE = "https://classification.psa.gov.ph/psgc"
-PERIODS = ["Q2_2024", "April_2024", "Q4_2023", "Q2_2021"]
+API_BASE = dbutils.widgets.get("psgc_api_base_url").strip().rstrip("/")
+PERIODS = [
+    period.strip()
+    for period in dbutils.widgets.get("psgc_periods").split(",")
+    if period.strip()
+]
 CATALOG = os.environ.get("AHON_CATALOG", "ahon")
 BRONZE_TABLE = f"{CATALOG}.bronze.psgc"
 
@@ -27,14 +33,11 @@ secret_key = dbutils.widgets.get("psgc_secret_key").strip()
 api_token = dbutils.secrets.get(scope=secret_scope, key=secret_key) if secret_scope and secret_key else ""
 
 if not api_token:
-    print(
-        "⚠️  Please paste your PSGC API token into the 'PSGC API Token' "
-        "widget above, then re-run this cell."
-    )
-else:
-    print(f"Periods     : {', '.join(PERIODS)}")
-    print(f"Bronze table: {BRONZE_TABLE}")
-    print("Token       : ✓ set")
+    raise RuntimeError("Configure the PSGC API token through Databricks Secrets")
+if not API_BASE or not PERIODS:
+    raise RuntimeError("Configure a PSGC API base URL and publication periods")
+print(f"Periods     : {', '.join(PERIODS)}")
+print(f"Bronze table: {BRONZE_TABLE}")
 
 # --- Fetch all records from the PSGC API ---
 all_records = []
@@ -43,9 +46,23 @@ for period in PERIODS:
     url = f"{API_BASE}/{period}/all?token={api_token}"
     page = 1
     while url:
-        response = requests.get(url, timeout=60)
-        response.raise_for_status()
-        data = response.json()
+        try:
+            response = requests.get(url, timeout=60)
+            response.raise_for_status()
+            data = response.json()
+        except requests.RequestException as error:
+            status = (
+                error.response.status_code
+                if error.response is not None
+                else "network error"
+            )
+            raise RuntimeError(
+                f"PSGC request failed for period {period}, page {page} ({status})"
+            ) from None
+        except ValueError:
+            raise RuntimeError(
+                f"PSGC returned invalid JSON for period {period}, page {page}"
+            ) from None
         results = data.get("results", [])
         all_records.extend(results)
         print(
@@ -146,7 +163,7 @@ source_df = (
         col("version"),
         col("populations_json"),
     )
-    .withColumn("_source_name", lit("PSGC API"))
+    .withColumn("_source_name", lit("psgc"))
     .withColumn("_source_ref", lit(API_BASE))
     .withColumn("_ingested_at", current_timestamp())
     .withColumn("_batch_id", lit(batch_id))

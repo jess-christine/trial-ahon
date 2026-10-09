@@ -35,6 +35,39 @@ variables:
     description: Existing Databricks secret scope containing the PSGC API token.
   psgc_secret_key:
     description: Existing Databricks secret key containing the PSGC API token.
+  psgc_api_base_url:
+    description: PSGC API base URL.
+    default: https://classification.psa.gov.ph/psgc
+  psgc_periods:
+    description: Comma-separated PSGC publication periods to ingest.
+    default: Q2_2024,April_2024,Q4_2023,Q2_2021
+  psa_api_url:
+    description: PSA PXWeb population table endpoint.
+    default: https://openstat.psa.gov.ph/PXWeb/api/v1/en/DB/1A/PO_2024/0241A6DPUP1.px
+  psa_census_year:
+    description: Census year represented by the configured PSA endpoint.
+    default: "2024"
+  phivolcs_base_url:
+    description: PHIVOLCS earthquake listing base URL.
+    default: https://earthquake.phivolcs.dost.gov.ph
+  phivolcs_years_back:
+    description: Number of annual PHIVOLCS listings to request, including current year.
+    default: "8"
+  blgf_dataset_repo_id:
+    description: Hugging Face dataset repository containing BLGF LDRRMF workbooks.
+    default: Jess-Christine/Project-AHON
+  blgf_dataset_folder:
+    description: Repository folder containing BLGF workbooks.
+    default: data/ldrrmf
+  cmci_portal_url:
+    description: CMCI portal URL used for the request referer.
+    default: https://cmci.dti.gov.ph/data-portal.php
+  cmci_process_url:
+    description: CMCI indicator response endpoint.
+    default: https://cmci.dti.gov.ph/data-portal-process.php
+  cmci_years:
+    description: Comma-separated CMCI reporting years to extract and profile.
+    default: "2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024"
 
 targets:
   dev:
