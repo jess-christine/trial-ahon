@@ -32,7 +32,7 @@ resources:
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
-          job_cluster_key: ahon_batch
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters: [--sql-file, src/sql/00_setup/00_catalog_schema_setup.sql]
@@ -42,7 +42,7 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: setup_catalog}]
-          job_cluster_key: ahon_batch
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters: [--sql-file, src/sql/00_setup/01_bronze_setup.sql]
@@ -52,7 +52,7 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: setup_bronze}]
-          job_cluster_key: ahon_batch
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters: [--sql-file, src/sql/00_setup/02_monitoring_setup.sql]
@@ -62,7 +62,7 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: setup_monitoring}]
-          job_cluster_key: ahon_batch
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters: [--sql-file, src/sql/00_setup/06_reference.sql]
@@ -72,7 +72,7 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: setup_reference_and_gold}]
-          job_cluster_key: ahon_batch
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters: [--sql-file, src/sql/00_setup/07_gold_setup.sql]
@@ -82,8 +82,7 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: setup_gold_tables}]
-          job_cluster_key: ahon_batch
-          libraries: [{pypi: {package: pandas}}, {pypi: {package: openpyxl}}]
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/06_reference/load_lgu_master.py
 
@@ -92,27 +91,27 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: setup_catalog}]
-          job_cluster_key: ahon_batch
-          libraries: [{pypi: {package: requests}}]
-          spark_python_task:
-            python_file: ../src/sql/datasets/psa_population/extract/extract_psa_population.py
+          environment_key: default
+          notebook_task:
+            notebook_path: ../src/sql/datasets/psa_population/extract/extract_psa_population.py
+            source: WORKSPACE
 
         - task_key: bronze_psa
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: extract_psa}, {task_key: setup_bronze}]
-          job_cluster_key: ahon_batch
-          spark_python_task:
-            python_file: ../src/sql/datasets/psa_population/bronze/load_psa_population.py
+          environment_key: default
+          notebook_task:
+            notebook_path: ../src/sql/datasets/psa_population/bronze/load_psa_population.py
+            source: WORKSPACE
 
         - task_key: extract_blgf
           max_retries: 1
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: setup_catalog}]
-          job_cluster_key: ahon_batch
-          libraries: [{pypi: {package: huggingface_hub}}, {pypi: {package: pandas}}, {pypi: {package: openpyxl}}]
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/datasets/blgf_ldrrmf_annual_lgu/extract/extract_blgf_ldrrmf_annual_lgu.py
 
@@ -121,8 +120,7 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: extract_blgf}, {task_key: setup_bronze}]
-          job_cluster_key: ahon_batch
-          libraries: [{pypi: {package: pandas}}, {pypi: {package: openpyxl}}]
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/datasets/blgf_ldrrmf_annual_lgu/bronze/load_blgf_ldrrmf_annual_lgu.py
 
@@ -131,8 +129,7 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: setup_catalog}]
-          job_cluster_key: ahon_batch
-          libraries: [{pypi: {package: pandas}}, {pypi: {package: lxml}}, {pypi: {package: requests}}]
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/datasets/philvolcs_earthquake/extract/philvolcs_earthquake_ingest.py
 
@@ -141,7 +138,7 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: extract_phivolcs}, {task_key: setup_bronze}]
-          job_cluster_key: ahon_batch
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/common/run_sql_file.py
             parameters: [--sql-file, src/sql/datasets/philvolcs_earthquake/bronze/philvolcs_earthquake.sql]
@@ -151,7 +148,7 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: setup_bronze}]
-          job_cluster_key: ahon_batch
+          environment_key: default
           notebook_task:
             notebook_path: ../src/sql/datasets/psgc/psgc_api.py
             source: WORKSPACE
@@ -298,7 +295,7 @@ resources:
             - {task_key: silver_psgc}
             - {task_key: cmci_silver_parse}
             - {task_key: load_geoportal_boundaries}
-          job_cluster_key: ahon_batch
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/gold/build_gold.py
 
@@ -316,6 +313,6 @@ resources:
           min_retry_interval_millis: 30000
           retry_on_timeout: true
           depends_on: [{task_key: validate_silver_gold}]
-          job_cluster_key: ahon_batch
+          environment_key: default
           spark_python_task:
             python_file: ../src/sql/platinum/build_platinum.py

@@ -17,8 +17,8 @@ from pathlib import Path
 from huggingface_hub import snapshot_download
 
 # Hugging Face dataset repo and the folder in it that holds the LDRRMF files.
-HF_REPO_ID = os.environ["AHON_BLGF_DATASET_REPO_ID"]
-HF_FOLDER = os.environ["AHON_BLGF_DATASET_FOLDER"].strip("/")
+HF_REPO_ID = os.environ.get("AHON_BLGF_DATASET_REPO_ID", "Jess-Christine/Project-AHON")
+HF_FOLDER = os.environ.get("AHON_BLGF_DATASET_FOLDER", "data/ldrrmf").strip("/")
 
 # Destination: the source volume, one folder per dataset, named after the dataset
 # (naming standard). The volume name is a stand-in and may change.

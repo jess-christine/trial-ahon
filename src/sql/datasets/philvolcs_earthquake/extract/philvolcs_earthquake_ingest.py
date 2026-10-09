@@ -9,7 +9,7 @@ import requests
 
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
                 "July", "August", "September", "October", "November", "December"]
-SOURCE_BASE_URL = os.environ["AHON_PHIVOLCS_BASE_URL"].rstrip("/")
+SOURCE_BASE_URL = os.environ.get("AHON_PHIVOLCS_BASE_URL", "https://earthquake.phivolcs.dost.gov.ph").rstrip("/")
 
 
 def scrape_current_month_from_main_page():
@@ -347,7 +347,7 @@ def rank_magnitudes(magnitudes):
 
 if __name__ == "__main__":
     # Configuration
-    YEARS_TO_SCRAPE = int(os.environ["AHON_PHIVOLCS_YEARS_BACK"])
+    YEARS_TO_SCRAPE = int(os.environ.get("AHON_PHIVOLCS_YEARS_BACK", "8"))
 
     #guys, change this if u want to reflect this on your catalog 
     catalog = os.environ.get("AHON_CATALOG", "ahon")

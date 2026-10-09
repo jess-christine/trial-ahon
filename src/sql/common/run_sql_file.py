@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import inspect
 from pathlib import Path
 
 
@@ -115,12 +116,9 @@ def main() -> None:
     source_volume = os.environ.get(
         "AHON_SOURCE_VOLUME", f"/Volumes/{catalog}/reference/source"
     )
-    sql_path = resolve_sql_path(
-        args.sql_file,
-        os.environ.get("AHON_REPOSITORY_ROOT"),
-        globals().get("__file__") or globals().get("filename"),
-        os.getcwd(),
-    )
+    sql_path = Path(args.sql_file)
+    if not sql_path.is_absolute():
+        sql_path = Path(inspect.currentframe().f_code.co_filename).resolve().parents[3] / sql_path
     sql_text = sql_path.read_text(encoding="utf-8")
     sql_text = render_sql(sql_text, catalog, source_volume)
 
