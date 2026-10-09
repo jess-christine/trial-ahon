@@ -21,7 +21,7 @@ WITH run_context AS (
         raw.`Date-Time` AS `Date-Time`,
         raw.Latitude AS Latitude,
         raw.Longitude AS Longitude,
-        raw.Depth AS Depth,
+        try_cast(raw.Depth AS DOUBLE) AS Depth,
         raw.Magnitude AS Magnitude,
         raw.Location AS Location,
         raw.Month AS Month,

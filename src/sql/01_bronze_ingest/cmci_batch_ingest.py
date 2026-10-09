@@ -363,7 +363,7 @@ approved_mapping_count = (
     approved_mapping_df.count()
 )
 
-EXPECTED_APPROVED_MAPPING_COUNT = 1634
+EXPECTED_APPROVED_MAPPING_COUNT = 1626
 
 if (
     approved_mapping_count

@@ -63,7 +63,7 @@ def main() -> None:
         F.get_json_object("feature_json", f"$.properties.{property_name}")
         .cast("string")
         .alias("psgc_code"),
-        F.get_json_object("feature_json", "$.geometry").alias("boundary_geojson"),
+        F.get_json_object("feature_json", "$.properties.geometry_wkb_hex").alias("boundary_wkb_hex"),
         "_source_name",
         "_source_ref",
         "_ingested_at",
@@ -88,23 +88,23 @@ def main() -> None:
         expected, "psgc_code", "left_anti"
     ).count()
     malformed_geometry = silver.filter(
-        F.col("boundary_geojson").isNull()
-        | F.expr("try_to_geometry(boundary_geojson) IS NULL")
+        F.col("boundary_wkb_hex").isNull()
+        | F.expr("try_to_geometry(unhex(boundary_wkb_hex)) IS NULL")
     ).count()
     non_polygon_geometry = silver.filter(
         F.expr(
-            "try_to_geometry(boundary_geojson) IS NOT NULL AND "
-            "upper(st_geometrytype(try_to_geometry(boundary_geojson))) "
-            "NOT IN ('POLYGON', 'MULTIPOLYGON')"
+            "try_to_geometry(unhex(boundary_wkb_hex)) IS NOT NULL AND "
+            "upper(st_geometrytype(try_to_geometry(unhex(boundary_wkb_hex)))) "
+            "NOT IN ('ST_POLYGON', 'ST_MULTIPOLYGON')"
         )
     ).count()
     out_of_bounds_geometry = silver.filter(
         F.expr(
-            "try_to_geometry(boundary_geojson) IS NOT NULL AND "
-            "(st_xmin(try_to_geometry(boundary_geojson)) < -180 OR "
-            "st_xmax(try_to_geometry(boundary_geojson)) > 180 OR "
-            "st_ymin(try_to_geometry(boundary_geojson)) < -90 OR "
-            "st_ymax(try_to_geometry(boundary_geojson)) > 90)"
+            "try_to_geometry(unhex(boundary_wkb_hex)) IS NOT NULL AND "
+            "(st_xmin(try_to_geometry(unhex(boundary_wkb_hex))) < -180 OR "
+            "st_xmax(try_to_geometry(unhex(boundary_wkb_hex))) > 180 OR "
+            "st_ymin(try_to_geometry(unhex(boundary_wkb_hex))) < -90 OR "
+            "st_ymax(try_to_geometry(unhex(boundary_wkb_hex))) > 90)"
         )
     ).count()
     details = json.dumps(

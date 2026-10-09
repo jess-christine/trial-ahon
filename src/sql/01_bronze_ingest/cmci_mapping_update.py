@@ -1,3 +1,4 @@
+import os
 import re
 import unicodedata
 
@@ -9,23 +10,32 @@ from cmci_common import (
 )
 from delta.tables import DeltaTable
 from pyspark.sql import functions as F
+from pyspark.sql import SparkSession
 from pyspark.sql.types import (
     StringType,
     StructField,
     StructType,
 )
 
+spark = SparkSession.builder.getOrCreate()
+
 # ------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------
 
+CATALOG = os.environ.get("AHON_CATALOG", "ahon")
+
 LGU_MASTER_TABLE = (
-    "ahon.reference.lgu_master"
+    f"{CATALOG}.reference.lgu_master"
 )
 
 CMCI_MAP_TABLE = (
-    "ahon.reference.cmci_lgu_map"
+    f"{CATALOG}.reference.cmci_lgu_map"
 )
+
+
+EXPECTED_PROVINCE_SUFFIX_COUNT
+
 
 EXPECTED_PROVINCE_SUFFIX_COUNT = 347
 EXPECTED_SUFFIX_EXCEPTION_COUNT = 4

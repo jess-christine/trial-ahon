@@ -65,10 +65,11 @@ def scrape_current_month_from_main_page():
         if not df.empty:
             first_col = df.iloc[:, 0].astype(str).str.strip()
             summary_mask = first_col.str.lower().str.contains('total|no. of events', na=False, regex=True)
-            month_abbrev_mask = first_col.str.match(r'^[A-Z][a-z]{2}-\d{2}$', na=False)
+            month_abbrev_mask = first_col.str.match(r'^[A-Z][a-z]{2}(-\d{2})?$', na=False)
             df = df[~(summary_mask | month_abbrev_mask)]
 
         df = df.dropna(how='all').reset_index(drop=True)
+        df = df.replace('-', None)
 
         current_month = datetime.now(timezone.utc).strftime("%B")
         current_year = datetime.now(timezone.utc).year
@@ -148,10 +149,11 @@ def scrape_phivolcs_data_from_html(year, month_name):
         if not df.empty:
             first_col = df.iloc[:, 0].astype(str).str.strip()
             summary_mask = first_col.str.lower().str.contains('total|no. of events', na=False, regex=True)
-            month_abbrev_mask = first_col.str.match(r'^[A-Z][a-z]{2}-\d{2}$', na=False)
+            month_abbrev_mask = first_col.str.match(r'^[A-Z][a-z]{2}(-\d{2})?$', na=False)
             df = df[~(summary_mask | month_abbrev_mask)]
 
         df = df.dropna(how='all').reset_index(drop=True)
+        df = df.replace('-', None)
 
         df['Month'] = month_name
         df['Year'] = year
