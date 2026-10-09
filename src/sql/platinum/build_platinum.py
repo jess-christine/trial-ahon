@@ -45,7 +45,9 @@ def main() -> None:
         .alias("population_exposure_score"),
     )
 
-    boundary = spark.table(table("silver", "lgu_boundary_clean")).select(
+    boundary = spark.table(
+        table("silver", "geoportal_city_municipality_boundary_clean")
+    ).select(
         "psgc_code", "boundary_geojson"
     ).join(lgu, "psgc_code", "inner")
     events = spark.table(table("gold", "fact_earthquake_event")).filter(

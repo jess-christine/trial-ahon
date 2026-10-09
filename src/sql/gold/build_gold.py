@@ -410,7 +410,9 @@ def build_fact_earthquake_event(spark: SparkSession) -> None:
 
     source = spark.table(PHIVOLCS_SILVER)
     boundary = (
-        spark.table(_table("ahon.silver.lgu_boundary_clean"))
+        spark.table(
+            _table("ahon.silver.geoportal_city_municipality_boundary_clean")
+        )
         .join(
             spark.table(_table("ahon.gold.dim_lgu"))
             .filter(F.col("geographic_level").isin("City", "Municipality", "City/Municipality"))

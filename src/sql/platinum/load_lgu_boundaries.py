@@ -41,7 +41,7 @@ def main() -> None:
         F.sha2(F.col("feature_json"), 256).alias("_row_hash"),
     )
     bronze_table = f"{catalog}.bronze.geoportal_city_municipality_boundary"
-    silver_table = f"{catalog}.silver.lgu_boundary_clean"
+    silver_table = f"{catalog}.silver.geoportal_city_municipality_boundary_clean"
     if spark.catalog.tableExists(bronze_table):
         DeltaTable.forName(spark, bronze_table).alias("target").merge(
             bronze.alias("source"),

@@ -5,14 +5,14 @@
 - **One row is:** one valid PHIVOLCS event observation.
 - **Key:** `earthquake_fact_key`, using the Silver deterministic event key derived from time, coordinates, depth, and magnitude. Duplicate keys block Gold loading; source observations are not deduplicated.
 - **Built by:** `src/sql/gold/build_gold.py`; schema in `src/sql/00_setup/07_gold_setup.sql`.
-- **Business questions:** provides valid event measures for risk analysis after an LGU geographic matching rule is approved.
+- **Business questions:** provides valid earthquake event measures and approximate LGU assignment for experimental risk analysis under decision [0007](../../decisions/0007-experimental-platinum-v1.md).
 
 | Column | Type | Description | Notes |
 |---|---|---|---|
 | `earthquake_fact_key` | bigint | Generated event observation key | Derived from Silver; duplicate keys block loading |
 | `psgc_code` | varchar(10) | Matched LGU code | Spatially matched only when exactly one active city/municipality approximate polygon covers the event coordinates; otherwise `NULL` |
 | `location` | varchar(500) | PHIVOLCS free-text location | No geocoding or inferred LGU assignment |
-| `timestamp` | timestamp | Local event time as published | Source has no timezone; timezone semantics remain open |
+| `timestamp` | timestamp | Event time parsed from the PHIVOLCS source | Source has no timezone. Current Silver/Gold/Platinum jobs use UTC Spark sessions; confirm whether the source wall time is UTC or Asia/Manila before operational interpretation. |
 | `depth` | decimal(10,2) | Event depth | Kilometers |
 | `magnitude` | decimal(4,2) | Event magnitude | Source scale retained |
 | `longitude` | decimal(10,7) | Event longitude | Decimal degrees |
@@ -22,4 +22,4 @@
 
 ## Quality and operations
 
-Only rows already accepted by documented PHIVOLCS Silver validity rules are loaded. Source-to-Silver valid-row counts, Gold row counts, key uniqueness, coordinate ranges, and non-negative depth/magnitude are checked. Unmatched events warn and remain present. Gold is rebuilt from Silver; reruns do not accumulate duplicates.
+Only rows already accepted by documented PHIVOLCS Silver validity rules are loaded. Source-to-Silver valid-row counts, Gold row counts, key uniqueness, coordinate ranges, and non-negative depth/magnitude are checked. Unmatched events warn and remain present. Gold is rebuilt from Silver; reruns do not accumulate duplicates. The five-year Platinum window currently compares parsed timestamps in UTC; timezone confirmation is required before interpreting events close to its cutoff.

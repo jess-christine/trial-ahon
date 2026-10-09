@@ -5,7 +5,7 @@
 - **One row is:** one configured indicator code.
 - **Key:** `indicator_code`.
 - **Built by:** `src/sql/gold/build_gold.py`; table created by `src/sql/00_setup/07_gold_setup.sql`.
-- **Business questions:** supports preparedness indicator analysis and identification of weak CMCI indicators after ranking decisions are approved.
+- **Business questions:** supports experimental Platinum v1 preparedness analysis and identification of comparatively low CMCI indicators among the highest-priority LGUs.
 
 | Column | Type | Description | Notes |
 |---|---|---|---|

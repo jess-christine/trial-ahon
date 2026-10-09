@@ -26,4 +26,4 @@ This keeps raw evidence auditable, produces actionable counts with a small numbe
 - Existing PSA tables with legacy provenance names require the one-time migration script before the aligned loader and validator can run.
 - That PSA migration enables Delta column mapping and upgrades the Delta protocol as required; workspace readers must support the resulting table feature.
 - At the time this decision was accepted, risk/preparedness measures, barangay population coverage, and LDRRMF/PHIVOLCS geographic matching remained open.
-- The population-grain item was resolved by [0006](0006-city-municipality-analysis-grain.md); risk/preparedness definitions and LDRRMF/PHIVOLCS matching remain open.
+- The population-grain item was resolved by [0006](0006-city-municipality-analysis-grain.md). Risk/preparedness assumptions and LDRRMF/PHIVOLCS matching were subsequently approved for experimental v1 by [0007](0007-experimental-platinum-v1.md); they remain experimental and require the source artifacts and configuration listed there.

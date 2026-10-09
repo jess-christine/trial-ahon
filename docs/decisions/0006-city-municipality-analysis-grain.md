@@ -12,7 +12,7 @@ The initial target diagram described `fact_population` at barangay grain, but th
 - Build `fact_population` from only PSA city/municipality rows, using the PSA `geographic_location` and year as its key.
 - Match a PSA row to active `lgu_master` only by exact `lgu_name` and `province_name`. Populate `psgc_code` only for one unique candidate; retain unmatched and ambiguous population rows with null `psgc_code`.
 - Build the Gold LDRRMF fact from City and Municipality rows only. Province and any unsupported-type rows remain in Bronze/Silver and are counted as explicit Gold scope exclusions.
-- Keep population metrics unnormalized and keep all other source values at their documented source grain until a separately approved mapping exists.
+- At the time this decision was accepted, population metrics remained unnormalized and LDRRMF/PHIVOLCS matching remained open. The subsequent experimental Platinum v1 assumptions and matching rules are recorded in [0007](0007-experimental-platinum-v1.md).
 
 ## Why
 
@@ -22,5 +22,5 @@ This aligns the analytical grain with the available PSA source and the active re
 
 - The Gold population fact schema is city/municipality path-year, not barangay-year; consumers must use the nullable PSGC key for dimension joins and retain unmatched rows for coverage reporting.
 - Exact text differences and missing or ambiguous province pairs reduce matched coverage; the quality result reports null matches.
-- Risk and preparedness metrics remain blocked on their unresolved normalization, component, threshold, missing-value, and ranking definitions.
+- Platinum risk and preparedness metrics are defined for experimental v1 by [0007](0007-experimental-platinum-v1.md); they are not calibrated production measures.
 - Bronze and Silver preserve full source coverage, including PSA hierarchy rows outside the selected Gold grain and BLGF province reports.

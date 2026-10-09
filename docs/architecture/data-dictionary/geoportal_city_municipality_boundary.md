@@ -21,7 +21,7 @@
 | `_batch_id` | string | Load run | |
 | `_row_hash` | string | SHA-256 of serialized feature | |
 
-## Silver: `ahon.silver.lgu_boundary_clean`
+## Silver: `ahon.silver.geoportal_city_municipality_boundary_clean`
 
 - **One row is:** one current city/municipality boundary feature.
 - **Key:** PSGC code from the configured GeoJSON property, expected unique in the selected file.

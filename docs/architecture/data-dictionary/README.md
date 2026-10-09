@@ -17,7 +17,7 @@ What each table and column in the pipeline means. One page per dataset, plus one
 | [fact_population](fact_population.md) | `fact_population` | gold |
 | [fact_ldrrmf](fact_ldrrmf.md) | `fact_ldrrmf` | gold |
 | [fact_earthquake_event](fact_earthquake_event.md) | `fact_earthquake_event` | gold |
-| [geoportal_city_municipality_boundary](geoportal_city_municipality_boundary.md) | `geoportal_city_municipality_boundary`, `lgu_boundary_clean` | bronze, silver |
+| [geoportal_city_municipality_boundary](geoportal_city_municipality_boundary.md) | `geoportal_city_municipality_boundary`, `geoportal_city_municipality_boundary_clean` | bronze, silver |
 | [platinum_analytics](platinum_analytics.md) | `risk_level_by_lgu`, `preparedness_gap_by_lgu`, `vulnerability_priority_by_lgu`, `cmci_preparedness_priority_by_indicator` | platinum |
 | [risk_level_by_lgu](risk_level_by_lgu.md) | `risk_level_by_lgu` | platinum |
 | [preparedness_gap_by_lgu](preparedness_gap_by_lgu.md) | `preparedness_gap_by_lgu` | platinum |
